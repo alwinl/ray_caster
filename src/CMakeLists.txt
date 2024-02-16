@@ -16,5 +16,18 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 
+
+find_package( PkgConfig REQUIRED )
+find_package(glm CONFIG REQUIRED)
+
+pkg_check_modules( SDL2_GFX REQUIRED SDL2_gfx )
+
 add_executable(ray_caster main.cc)
+
+target_include_directories(ray_caster PRIVATE ${SDL2_GFX_INCLUDE_DIRS})
+#target_compile_features( sdl2_wrapper PRIVATE cxx_std_20)
+
+target_link_libraries( ray_caster PRIVATE SDL2_Wrapper )
+target_link_libraries(ray_caster PRIVATE ${SDL2_GFX_LIBRARIES})
+target_link_libraries(ray_caster PRIVATE glm::glm)
 

@@ -1,4 +1,3 @@
-
 #  CMakeLists.txt Copyright 2024 Alwin Leerling dna.leerling@gmail.com
 
 #  This program is free software; you can redistribute it and/or modify
@@ -16,3 +15,15 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 
+set(OpenGL_GL_PREFERENCE GLVND)
+
+find_package(PkgConfig REQUIRED)
+find_package(OpenGL REQUIRED)
+
+pkg_check_modules(SDL2 REQUIRED sdl2)
+
+add_library(SDL2_Wrapper INTERFACE)
+
+target_include_directories(SDL2_Wrapper INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(SDL2_Wrapper INTERFACE ${SDL2_LIBRARIES})
+target_link_libraries(SDL2_Wrapper INTERFACE ${OPENGL_LIBRARIES})
