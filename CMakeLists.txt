@@ -1,5 +1,5 @@
 
-#  .gitignore Copyright 2024 Alwin Leerling dna.leerling@gmail.com
+#  CMakeLists.txt Copyright 2024 Alwin Leerling dna.leerling@gmail.com
 
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -16,4 +16,18 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 
-*build/**
+cmake_minimum_required(VERSION 3.5.0)
+project(ray_caster VERSION 0.1.0 LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+
+include(CTest)
+enable_testing()
+
+set(CPACK_PROJECT_NAME ${PROJECT_NAME})
+set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
+include(CPack)
+
+add_subdirectory(lib)
+add_subdirectory(src)
+add_subdirectory(test)
