@@ -19,7 +19,12 @@
 
 #include <iostream>
 
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <iterator>
 #include <string>
+#include <vector>
 
 #include "SDL2_gfxPrimitives.h"
 #include "sdl2wrapper.h"
@@ -33,12 +38,14 @@
 
 int unit_size = 80;
 
+class TilePaintingGame;
+
 class Player
 {
 public:
 	Player( int init_x, int init_y ) : position( init_x, init_y, 0.0 ){};
 
-	void draw( SDL_Renderer *window );
+	void draw( TilePaintingGame *game );
 
 	void move_forward()
 	{
@@ -66,7 +73,6 @@ private:
 
 	glm::mat4 get_trans_matrix()
 	{
-
 		glm::mat4 trans = glm::mat4( 1.0F );
 		trans = glm::translate( trans, position );
 		trans = glm::rotate( trans, glm::radians( angle ), glm::vec3( 0.0F, 0.0F, 1.0F ) );
@@ -74,39 +80,10 @@ private:
 
 		return trans;
 	}
-
-	// glm::vec4 transform_point( glm::vec4 point ) { return get_trans_matrix() * point; }
 };
-
-void Player::draw( SDL_Renderer *window )
-{
-	const glm::mat4 trans = get_trans_matrix();
-
-	SDL_SetRenderDrawColor( window, 1 * 255, 1 * 255, 1 * 255, 1 * 255 );
-
-	filledCircleRGBA( window, position.x, position.y, unit_size / 5, 255, 255, 0, 255 );
-
-	SDL_SetRenderDrawColor( window, 1 * 255, 0 * 255, 0 * 255, 1 * 255 );
-	const glm::vec4 world_dir = trans * glm::vec4( 1.0F, 0.0F, 0.0F, 1.0F );
-	SDL_RenderDrawLine( window, position.x, position.y, world_dir.x, world_dir.y );
-
-	SDL_SetRenderDrawColor( window, 0 * 255, 1 * 255, 0 * 255, 1 * 255 );
-	const glm::vec4 world_cam_left = trans * glm::vec4( 1.0F, zoom, 0.0F, 1.0F );
-	const glm::vec4 world_cam_right = trans * glm::vec4( 1.0F, -zoom, 0.0F, 1.0F );
-	SDL_RenderDrawLine( window, world_cam_left.x, world_cam_left.y, world_cam_right.x, world_cam_right.y );
-
-	SDL_SetRenderDrawColor( window, 0 * 255, 0 * 255, 1 * 255, 1 * 255 );
-	const glm::vec4 world_left_ray = trans * glm::vec4( 2.0F, 2 * zoom, 0.0F, 1.0F );
-	const glm::vec4 world_right_ray = trans * glm::vec4( 2.0F, 2 * -zoom, 0.0F, 1.0F );
-	SDL_RenderDrawLine( window, position.x, position.y, world_left_ray.x, world_left_ray.y );
-	SDL_RenderDrawLine( window, position.x, position.y, world_right_ray.x, world_right_ray.y );
-}
 
 class TilePaintingGame : public Game
 {
-public:
-	TilePaintingGame() : hero( 100, 100 ){};
-
 private:
 	SetupParams get_params() override;
 	void setup() override;
@@ -114,8 +91,8 @@ private:
 	void update_state( uint64_t elapsed_time ) override;
 	void draw_frame( SDL_Renderer *window ) override;
 
-	void draw_grid( SDL_Renderer *window );
-	void draw_level( SDL_Renderer *window );
+	void draw_grid();
+	void draw_level();
 
 	std::string level = "1111111111"
 						"1000100001"
@@ -128,7 +105,7 @@ private:
 						"1000000001"
 						"1111111111";
 
-	Player hero;
+	Player hero{ 100, 100 };
 
 	bool quit = false;
 
@@ -140,11 +117,47 @@ private:
 	uint8_t KEY_Z = 0;
 
 	uint8_t KEY_IS_DOWN = 0x01;
+
+	SDL_Renderer *window = nullptr;
+
+public:
+	void draw_line( glm::vec3 point_from, glm::vec3 point_to, glm::vec4 color );
+	void draw_geometry( std::vector<glm::vec4> &vertex_points, glm::vec4 color );
 };
+
+void Player::draw( TilePaintingGame *game )
+{
+	const glm::mat4 trans = get_trans_matrix();
+	const glm::vec4 red = glm::vec4( 1.0F, 0.0F, 0.0F, 1.0F );
+	const glm::vec4 green = glm::vec4( 0.0F, 1.0F, 0.0F, 1.0F );
+	const glm::vec4 blue = glm::vec4( 0.0F, 0.0F, 1.0F, 1.0F );
+	const glm::vec4 yellow = glm::vec4( 1.0F, 1.0F, 0.0F, 1.0F );
+
+	std::vector<glm::vec4> player_geometry = {
+		glm::vec4( 0.1F, 0.0F, 0.0F, 1.0F ),
+		glm::vec4( -0.1F, -0.1F, 0.0F, 1.0F ),
+		glm::vec4( -0.1F, 0.1F, 0.0F, 1.0F ),
+	};
+
+	const glm::vec4 dir = trans * glm::vec4( 1.0F, 0.0F, 0.0F, 1.0F );
+	const glm::vec4 cam_left = trans * glm::vec4( 1.0F, zoom, 0.0F, 1.0F );
+	const glm::vec4 cam_right = trans * glm::vec4( 1.0F, -zoom, 0.0F, 1.0F );
+	const glm::vec4 left_ray = trans * glm::vec4( 2.0F, 2 * zoom, 0.0F, 1.0F );
+	const glm::vec4 right_ray = trans * glm::vec4( 2.0F, 2 * -zoom, 0.0F, 1.0F );
+
+	std::transform( player_geometry.begin(), player_geometry.end(), player_geometry.begin(),
+					[&trans]( glm::vec4 point ) { return trans * point; } );
+
+	game->draw_line( position, dir, red );
+	game->draw_line( cam_left, cam_right, green );
+	game->draw_line( position, left_ray, blue );
+	game->draw_line( position, right_ray, blue );
+	game->draw_geometry( player_geometry, yellow );
+}
 
 SetupParams TilePaintingGame::get_params()
 {
-	return SetupParams( { "Blank Game", 10 * unit_size * 2, 10 * unit_size, 0, SDL_RENDERER_ACCELERATED } );
+	return SetupParams( { "Ray Caster", 10 * unit_size * 2, 10 * unit_size, 0, SDL_RENDERER_ACCELERATED } );
 }
 
 void TilePaintingGame::setup() {}
@@ -198,32 +211,79 @@ void TilePaintingGame::update_state( uint64_t /*elapsed_time*/ )
 
 void TilePaintingGame::draw_frame( SDL_Renderer *window )
 {
-	draw_grid( window );
-	draw_level( window );
+	this->window = window;
 
-	hero.draw( window );
+	draw_grid();
+	draw_level();
+
+	hero.draw( this );
 }
 
-void TilePaintingGame::draw_grid( SDL_Renderer *window )
+void TilePaintingGame::draw_grid()
 {
-	SDL_SetRenderDrawColor( window, 0.3 * 255, 0.3 * 255, 0.3 * 255, 1 * 255 );
+	const glm::vec4 grid_color = { 0.3, 0.3, 0.3, 1.0 };
 
 	for( int line = 0; line <= 10; ++line ) {
-		SDL_RenderDrawLine( window, line * unit_size, 0, line * unit_size, 10 * unit_size );
-		SDL_RenderDrawLine( window, 0, line * unit_size, 10 * unit_size, line * unit_size );
+		draw_line( glm::vec3( line * unit_size, 0, 0 ), glm::vec3( line * unit_size, 10 * unit_size, 0 ), grid_color );
+		draw_line( glm::vec3( 0, line * unit_size, 0 ), glm::vec3( 10 * unit_size, line * unit_size, 0 ), grid_color );
 	}
 }
 
-void TilePaintingGame::draw_level( SDL_Renderer *window )
+void TilePaintingGame::draw_level()
 {
-	SDL_SetRenderDrawColor( window, 1 * 255, 1 * 255, 1 * 255, 1 * 255 );
+	const glm::vec4 white = { 1.0F, 1.0F, 1.0F, 1.0F };
+
+	const auto funit_size = static_cast<float>( unit_size );
 
 	for( int cell = 0; cell < 100; ++cell ) {
 		if( level[cell] == '1' ) {
-			SDL_Rect const rect( { ( cell % 10 ) * unit_size, ( cell / 10 ) * unit_size, unit_size, unit_size } );
-			SDL_RenderFillRect( window, &rect );
+			const float top_x = static_cast<float>( cell % 10 ) * funit_size;
+			const float top_y = static_cast<float>( cell / 10.0 ) * funit_size;
+			const float bottom_x = top_x + funit_size;
+			const float bottom_y = top_y + funit_size;
+
+			std::vector<glm::vec4> square_corners = {
+				glm::vec4( top_x, top_y, 0.0F, 1.0F ), // top right triangle
+				glm::vec4( bottom_x, top_y, 0.0F, 1.0F ),	 glm::vec4( bottom_x, bottom_y, 0.0F, 1.0F ),
+
+				glm::vec4( top_x, top_y, 0.0F, 1.0F ), // bottom left triangle
+				glm::vec4( bottom_x, bottom_y, 0.0F, 1.0F ), glm::vec4( top_x, bottom_y, 0.0F, 1.0F ),
+			};
+
+			draw_geometry( square_corners, white );
 		}
 	}
+}
+
+void TilePaintingGame::draw_line( glm::vec3 point_from, glm::vec3 point_to, glm::vec4 color )
+{
+	/* trunk-ignore(clang-tidy/cppcoreguidelines-pro-type-union-access) */
+	SDL_SetRenderDrawColor( window, static_cast<Uint8>( color.r * 255 ), static_cast<Uint8>( color.g * 255 ),
+							/* trunk-ignore(clang-tidy/cppcoreguidelines-pro-type-union-access) */
+							static_cast<Uint8>( color.b * 255 ), static_cast<Uint8>( color.a * 255 ) );
+	/* trunk-ignore(clang-tidy/cppcoreguidelines-pro-type-union-access) */
+	SDL_RenderDrawLine( window, static_cast<int>( point_from.x ), static_cast<int>( point_from.y ),
+						/* trunk-ignore(clang-tidy/cppcoreguidelines-pro-type-union-access) */
+						static_cast<int>( point_to.x ), static_cast<int>( point_to.y ) );
+}
+
+void TilePaintingGame::draw_geometry( std::vector<glm::vec4> &vertex_points, glm::vec4 color )
+{
+	std::vector<SDL_Vertex> vertices;
+
+	vertices.resize( vertex_points.size() );
+
+	std::transform( vertex_points.begin(), vertex_points.end(), vertices.begin(), [&color]( glm::vec4 point ) {
+		/* trunk-ignore(clang-tidy/cppcoreguidelines-pro-type-union-access) */
+		return SDL_Vertex( { SDL_FPoint{ point.x, point.y },
+							 /* trunk-ignore(clang-tidy/cppcoreguidelines-pro-type-union-access) */
+							 SDL_Color{ static_cast<Uint8>( color.r * 255 ), static_cast<Uint8>( color.g * 255 ),
+										/* trunk-ignore(clang-tidy/cppcoreguidelines-pro-type-union-access) */
+										static_cast<Uint8>( color.b * 255 ) },
+							 SDL_FPoint{ 0 } } );
+	} );
+
+	SDL_RenderGeometry( window, nullptr, vertices.data(), static_cast<int>( vertices.size() ), nullptr, 0 );
 }
 
 int main( int /*unused*/, char ** /*unused*/ )
