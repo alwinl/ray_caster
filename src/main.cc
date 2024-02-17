@@ -47,20 +47,8 @@ public:
 
 	void draw( TilePaintingGame *game );
 
-	void move_forward()
-	{
-		glm::mat4 trans = get_trans_matrix();
-		trans = glm::scale( trans, glm::vec3( 0.05, 0.05, 1 ) );
-		position = trans * glm::vec4( 1.0F, 0.0F, 0.0F, 1.0F );
-	}
-
-	void move_back()
-	{
-		glm::mat4 trans = get_trans_matrix();
-		trans = glm::scale( trans, glm::vec3( 0.05, 0.05, 1 ) );
-		position = trans * glm::vec4( -1.0F, 0.0F, 0.0F, 1.0F );
-	}
-
+	void move_forward() { position = get_trans_matrix() * glm::vec4( 0.05F, 0.0F, 0.0F, 1.0F ); }
+	void move_back() { position = get_trans_matrix() * glm::vec4( -0.05F, 0.0F, 0.0F, 1.0F ); }
 	void turn_left() { angle -= 1.0; }
 	void turn_right() { angle += 1.0; }
 	void zoom_in() { zoom -= 0.01; }
@@ -128,6 +116,7 @@ public:
 void Player::draw( TilePaintingGame *game )
 {
 	const glm::mat4 trans = get_trans_matrix();
+
 	const glm::vec4 red = glm::vec4( 1.0F, 0.0F, 0.0F, 1.0F );
 	const glm::vec4 green = glm::vec4( 0.0F, 1.0F, 0.0F, 1.0F );
 	const glm::vec4 blue = glm::vec4( 0.0F, 0.0F, 1.0F, 1.0F );
@@ -232,25 +221,26 @@ void TilePaintingGame::draw_grid()
 void TilePaintingGame::draw_level()
 {
 	const glm::vec4 white = { 1.0F, 1.0F, 1.0F, 1.0F };
+	std::vector<glm::vec4> vertices;
 
-	const auto funit_size = static_cast<float>( unit_size );
+	std::vector<glm::vec4> square_corners = {
+		glm::vec4( 0.0F, 0.0F, 0.0F, 1.0F ), glm::vec4( 0.0F, 1.0F, 0.0F, 1.0F ), glm::vec4( 1.0F, 0.0F, 0.0F, 1.0F ),
+		glm::vec4( 1.0F, 1.0F, 0.0F, 1.0F ), glm::vec4( 1.0F, 0.0F, 0.0F, 1.0F ), glm::vec4( 0.0F, 1.0F, 0.0F, 1.0F ),
+	};
+
+	vertices.resize( 6 );
 
 	for( int cell = 0; cell < 100; ++cell ) {
 		if( level[cell] == '1' ) {
-			const float top_x = static_cast<float>( cell % 10 ) * funit_size;
-			const float top_y = static_cast<float>( cell / 10.0 ) * funit_size;
-			const float bottom_x = top_x + funit_size;
-			const float bottom_y = top_y + funit_size;
 
-			std::vector<glm::vec4> square_corners = {
-				glm::vec4( top_x, top_y, 0.0F, 1.0F ), // top right triangle
-				glm::vec4( bottom_x, top_y, 0.0F, 1.0F ),	 glm::vec4( bottom_x, bottom_y, 0.0F, 1.0F ),
+			glm::mat4 trans = glm::mat4( 1.0F );
+			trans = glm::scale( trans, glm::vec3( unit_size, unit_size, 1 ) );
+			trans = glm::translate( trans, glm::vec3( cell % 10, cell / 10, 0.0F ) );
 
-				glm::vec4( top_x, top_y, 0.0F, 1.0F ), // bottom left triangle
-				glm::vec4( bottom_x, bottom_y, 0.0F, 1.0F ), glm::vec4( top_x, bottom_y, 0.0F, 1.0F ),
-			};
+			std::transform( square_corners.begin(), square_corners.end(), vertices.begin(),
+							[&trans]( glm::vec4 point ) { return trans * point; } );
 
-			draw_geometry( square_corners, white );
+			draw_geometry( vertices, white );
 		}
 	}
 }
