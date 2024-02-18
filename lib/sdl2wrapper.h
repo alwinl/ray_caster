@@ -17,6 +17,8 @@
  * MA 02110-1301, USA.
  */
 
+#pragma once
+
 #include <string>
 
 #include <SDL2/SDL.h>
@@ -39,7 +41,11 @@ public:
 	void initialise() { setup(); }
 	bool input( SDL_Event &event ) { return process_event( event ); };
 	void update( uint64_t elapsed_time ) { update_state( elapsed_time ); }
-	void draw( SDL_Renderer *window ) { draw_frame( window ); }
+	void draw( SDL_Renderer *window )
+	{
+		this->window = window;
+		draw_frame( window );
+	}
 
 protected:
 	virtual SetupParams get_params() = 0;
@@ -47,6 +53,8 @@ protected:
 	virtual bool process_event( SDL_Event &event ) = 0;
 	virtual void update_state( uint64_t elapsed_time ) = 0;
 	virtual void draw_frame( SDL_Renderer *window ) = 0;
+
+	SDL_Renderer *window = nullptr;
 };
 
 template <typename T> class GameWrapper

@@ -1,5 +1,5 @@
 /*
- * main.cc Copyright 2024 Alwin Leerling dna.leerling@gmail.com
+ * player.h Copyright 2024 Alwin Leerling dna.leerling@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,10 +17,36 @@
  * MA 02110-1301, USA.
  */
 
-#include "tile_painting_game.h"
+#ifndef PLAYER_H
+#define PLAYER_H
 
-int main( int /*unused*/, char ** /*unused*/ )
+#include <glm/glm.hpp>
+
+class TilePaintingGame;
+
+class Player
 {
-	GameWrapper<TilePaintingGame> the_game;
-	return the_game.run();
-}
+public:
+	Player( glm::ivec2 position, int scale_factor );
+
+	void draw( TilePaintingGame *game );
+
+	void move_forward();
+	void move_back();
+	void turn_left();
+	void turn_right();
+	void zoom_in();
+	void zoom_out();
+
+private:
+	glm::vec3 position;
+	float angle = 0.0;
+	float zoom = 1.0;
+	int scale_factor;
+
+	glm::mat4 get_trans_matrix();
+
+	void paint_rays( TilePaintingGame *game );
+};
+
+#endif // PLAYER_H
