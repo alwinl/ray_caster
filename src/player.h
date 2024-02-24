@@ -27,9 +27,9 @@ class TilePaintingGame;
 class Player
 {
 public:
-	Player( glm::ivec2 position, int scale_factor );
+	Player( TilePaintingGame *game, glm::ivec2 position, int scale_factor );
 
-	void draw( TilePaintingGame *game );
+	void draw();
 
 	void move_forward();
 	void move_back();
@@ -41,15 +41,18 @@ public:
 private:
 	glm::vec3 position;
 	float angle = 0.0;
-	float zoom = 1.0;
+	float zoom = 0.4;
 	int scale_factor;
+	TilePaintingGame *game;
 
 	glm::mat4 get_trans_matrix();
 
-	void paint_rays( TilePaintingGame *game );
-	void paint_direction( TilePaintingGame *game );
-	void paint_camera_projection( TilePaintingGame *game );
-	void paint_character( TilePaintingGame *game );
+	void paint_rays();
+	void paint_direction();
+	void paint_camera_projection();
+	void paint_character();
+
+	std::pair<int, glm::vec2> calc_intersection( float angle );
 };
 
 #endif // PLAYER_H

@@ -96,7 +96,7 @@ void TilePaintingGame::draw_frame()
 	draw_grid();
 	draw_level();
 
-	hero.draw( this );
+	hero.draw();
 }
 
 void TilePaintingGame::draw_grid()
@@ -180,7 +180,7 @@ void TilePaintingGame::draw_geometry( std::vector<glm::vec4> &vertex_points, glm
 
 	std::transform( vertex_points.begin(), vertex_points.end(), vertices.begin(), [&]( glm::vec4 point ) {
 		const glm::ivec2 vert( point[0], point[1] );
-		const glm::vec2 fvert( std::clamp( vert[0], 0, world_dimension[0] * unit_size ),
+		const glm::vec2 fvert( std::clamp( vert[0], 0, world_dimension[0] * unit_size * 2 ),
 							   std::clamp( vert[1], 0, world_dimension[1] * unit_size ) );
 		return SDL_Vertex( { { fvert[0], fvert[1] }, colour, texture_uv } );
 	} );
@@ -208,11 +208,19 @@ void TilePaintingGame::draw_line( std::pair<glm::vec3, glm::vec3> points, glm::v
 	glm::ivec3 pt_from( points.first );
 	glm::ivec3 pt_to( points.second );
 
-	pt_from[0] = std::clamp( pt_from[0], 0, world_dimension[0] * unit_size );
+	pt_from[0] = std::clamp( pt_from[0], 0, world_dimension[0] * unit_size * 2 );
 	pt_from[1] = std::clamp( pt_from[1], 0, world_dimension[1] * unit_size );
-	pt_to[0] = std::clamp( pt_to[0], 0, world_dimension[0] * unit_size );
+	pt_to[0] = std::clamp( pt_to[0], 0, world_dimension[0] * unit_size * 2 );
 	pt_to[1] = std::clamp( pt_to[1], 0, world_dimension[1] * unit_size );
 
 	SDL_SetRenderDrawColor( window, temp[0], temp[1], temp[2], temp[3] );
 	SDL_RenderDrawLine( window, pt_from[0], pt_from[1], pt_to[0], pt_to[1] );
+}
+
+bool TilePaintingGame::is_wall( glm::ivec2 cell )
+{
+	if( cell[0] < 0 || cell[0] > world_dimension[0] || cell[1] < 0 || cell[1] > world_dimension[1] )
+		return false;
+
+	return level[cell[0] + cell[1] * world_dimension[0]] == '1';
 }

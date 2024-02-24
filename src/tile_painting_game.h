@@ -45,7 +45,7 @@ public:
 	void draw_line( std::pair<glm::vec3, glm::vec3> points, glm::vec4 color );
 	void draw_geometry( std::vector<glm::vec4> &vertex_points, glm::vec4 color );
 
-	bool is_wall( glm::ivec3 cell ) { return level[cell[0] + cell[1] * world_dimension[0]] == '1'; }
+	bool is_wall( glm::ivec2 cell );
 
 private:
 	SetupParams get_params() override;
@@ -72,7 +72,7 @@ private:
 
 	const int unit_size = 80;
 
-	Player hero{ { 100, 100 }, unit_size };
+	Player hero{ this, { 100, 100 }, unit_size };
 
 	bool quit = false;
 
