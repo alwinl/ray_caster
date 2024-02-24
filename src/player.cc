@@ -68,41 +68,21 @@ glm::mat4 Player::get_trans_matrix()
 
 void Player::draw( TilePaintingGame *game )
 {
-	// const int total_width = 800;
-	// const float local_zoom = zoom;
-
-	// auto calc_coord = [&local_zoom, &total_width](int t){ return (local_zoom * (2 * t / float(total_width) - 1)); };
-
-	// const glm::mat4 trans = get_trans_matrix();
-
-	// const glm::vec4 red = glm::vec4( 1.0F, 0.0F, 0.0F, 1.0F );
-	// const glm::vec4 green = glm::vec4( 0.0F, 1.0F, 0.0F, 1.0F );
-	//  const glm::vec4 blue = glm::vec4( 0.0F, 0.0F, 1.0F, 1.0F );
-
-	// const glm::vec4 dir = trans * glm::vec4( 1.0F, 0.0F, 0.0F, 1.0F );
-
-	// const glm::vec4 cam_left = trans * glm::vec4( 1.0F, -1.0F, 0.0F, 1.0F );
-	// const glm::vec4 cam_right = trans * glm::vec4( 1.0F, 1.0F, 0.0F, 1.0F );
-	//  const glm::vec4 left_ray = trans * glm::vec4( 2.0F, 2 * calc_coord(total_width), 0.0F, 1.0F );
-	//  const glm::vec4 right_ray = trans * glm::vec4( 2.0F, 2 * calc_coord(0), 0.0F, 1.0F );
-
-	// game->draw_line( position, dir, red );
-	// game->draw_line( cam_left, cam_right, green );
-	//  game->draw_line( position, left_ray, blue );
-	//  game->draw_line( position, right_ray, blue );
-
 	paint_rays( game );
 	paint_direction( game );
 	paint_camera_projection( game );
 	paint_character( game );
 }
 
+enum class eHitClassification { NO_HIT, NORTHWALL, EASTWALL, SOUTHWALL, WESTWALL };
+
 void Player::paint_rays( TilePaintingGame *game )
 {
 	const glm::vec4 red = glm::vec4( 1.0F, 0.0F, 0.0F, 1.0F );
 	const glm::vec4 blue = glm::vec4( 0.0F, 0.0F, 1.0F, 1.0F );
+	const glm::vec4 magenta = glm::vec4( 0.0F, 1.0F, 1.0F, 1.0F );
 
-	const glm::ivec3 cell( position / scale_factor );
+	const glm::ivec3 cell = glm::ivec3( position / scale_factor ) * scale_factor;
 	const glm::ivec3 offset( position - glm::vec3( cell * scale_factor ) );
 
 	const int resolution = 10; // screen_width
@@ -112,26 +92,86 @@ void Player::paint_rays( TilePaintingGame *game )
 
 	for( int step = 0; step <= resolution; ++step ) {
 
-		const glm::vec3 direction = { cos( rot_angle ), sin( rot_angle ), 0.0 };
+		// const glm::vec3 direction = { cos( rot_angle ), sin( rot_angle ), 0.0 };
 
-		// tan(angle) = opp / adj = sin(angle) / cos(angle) = -dy / dx
-		const glm::vec3 delta_distance = { -tan( rot_angle ), 1.0 / tan( rot_angle ), 0.0 };
+		// // tan(angle) = opp / adj = sin(angle) / cos(angle) = -dy / dx
+		// const glm::vec3 delta_distance = { -tan( rot_angle ), 1.0 / tan( rot_angle ), 0.0 };
 
-		// hyp * cos(angle) = x => hyp = x/cos(angle), given x = 1 => hyp = 1/cos(angle)
-		// hyp * sin(angle) = y => hyp = y/sin(angle), given y = 1 => hyp = 1/sin(angle)
-		// In graphic systems y increases downwards, so invert
-		const glm::vec3 travel_distance = { std::abs( cos( rot_angle ) ) < 0.001 ? 1e30 : 1 / cos( rot_angle ),
-											std::abs( sin( rot_angle ) ) < 0.001 ? 1e30 : 1 / sin( rot_angle ), 0.0 };
+		// // hyp * cos(angle) = x => hyp = x/cos(angle), given x = 1 => hyp = 1/cos(angle)
+		// // hyp * sin(angle) = y => hyp = y/sin(angle), given y = 1 => hyp = 1/sin(angle)
+		// // In graphic systems y increases downwards, so invert
+		// const glm::vec3 travel_distance = { std::abs( cos( rot_angle ) ) < 0.001 ? 1e30 : 1 / std::cos( rot_angle ),
+		// 									std::abs( sin( rot_angle ) ) < 0.001 ? 1e30 : 1 / std::sin( rot_angle ),
+		// 									0.0 };
 
-		// game->draw_line( position, position + glm::vec3(1.0, travel_distance[1], 0.0F), blue );
-		// game->draw_line( position, position + glm::vec3(travel_distance[0], 1.0, 0.0F), red );
+		glm::vec3 intercept( cell );
+		glm::vec3 vert_add( -1.0 * scale_factor, -1.0 * scale_factor * std::tan( rot_angle ), 0.0F );
+		glm::vec3 horz_add( -1.0 * scale_factor / std::tan( rot_angle ), -1.0 * scale_factor, 0.0F );
 
-		game->draw_line( position, position + direction * scale_factor, blue );
+		if( cos( rot_angle ) > 0.0 ) { // looking right
+			intercept[0] += static_cast<float>( scale_factor );
+			vert_add *= -1.0F;
+		}
 
-		// game->draw_line( position, position + direction * glm::vec3(scale_factor, scale_factor * delta_distance[0],
-		// 0.0F), red );
-		//  game->draw_line( position, position + direction * glm::vec3(scale_factor * delta_distance[0], scale_factor,
-		//  red );
+		if( sin( rot_angle ) > 0.0 ) { // looking down
+			intercept[1] += static_cast<float>( scale_factor );
+			horz_add *= -1.0F;
+		}
+
+		// Now we need to find smaller distance (over the hypotenuse) to the edge of the cell
+		// Are we going to vertically intersect or horizontally
+		// for the vertical intersect the distance traveled:
+		// 		cos(angle) = dx / hypotenuse <=>
+		// 		hypotenuse = dx / cos(angle)
+		//
+		// for the horizontal intersect the distance traveled:
+		//		sin(angle) = dy / hypotenuse <=>
+		// 		hypotenuse = dy / sin( angle )
+		//
+		// We want the smallest distance :
+		//	if( dx / cos(angle) < dy sin(angle) )
+		//		use_vertical
+		//	else
+		//		use_horizontal
+
+		// 	dx / cos(angle) < dy / sin(angle) <=>
+		//	sin(angle) / cos(angle) < dy / dx <=>
+		//	tan(angle) < dy / dx
+
+		const glm::vec2 delta( intercept[0] - position[0], intercept[1] - position[1] );
+
+		if( std::abs( std::tan( rot_angle ) ) < std::abs( delta[1] / delta[0] ) )
+			intercept[1] = position[1] + delta[0] * std::tan( rot_angle ); // vertical intersect. X is correct, calc Y
+		else
+			intercept[0] = position[0] + delta[1] / std::tan( rot_angle ); // horizontal intersect, Y is correct, calc X
+
+		// glm::vec3 total_distance_travelled{ (intercept[0] - position[0]), (intercept[1] - position[1]), 0.0 };
+
+		game->draw_point( intercept, 2, glm::vec4( 0.0F, 1.0F, 1.0F, 1.0F ) );
+
+		game->draw_line( std::pair<glm::vec3, glm::vec3>( position, intercept ), blue );
+
+		// eHitClassification hit_indicator = eHitClassification::NO_HIT;
+
+		// while( hit_indicator == eHitClassification::NO_HIT ) {
+
+		// 	if( game->is_wall( glm::ivec3(intercept) ) ) {
+
+		// 		game->draw_point( intercept, 2, magenta );
+		// 		game->draw_line( std::pair<glm::vec3,glm::vec3>(position, intercept), blue );
+
+		// 		if( (intercept[0] % scale_factor) == 0 )			// east or west wall
+		// 			hit_indicator = (intercept[0] < position[0]) ? eHitClassification::EASTWALL :
+		// eHitClassification::WESTWALL; 		else 			hit_indicator = (intercept[1] < position[1]) ?
+		// eHitClassification::NORTHWALL : eHitClassification::SOUTHWALL; 		break;
+		// 	}
+
+		// 	glm::vec3 new_vert_intercept = glm::vec3(intercept) + vert_add;
+		// 	glm::vec3 new_horz_intercept = glm::vec3(intercept) + horz_add;
+
+		// 	if( std::abs(std::tan( rot_angle) ) < std::abs((intercept[1] - position[1]) / (intercept[0] - position[0]))
+		// )
+		// }
 
 		rot_angle -= delta_angle;
 	}
@@ -197,7 +237,7 @@ void Player::paint_rays( TilePaintingGame *game )
 // 			//const glm::vec4 ray = trans * glm::vec4( coord_inv, 1.0F, 0.0F, 1.0F );
 // 			//const glm::vec4 ray = trans * glm::vec4(unit_vector *2/*/ coord*/, 0.0, 1.0 );
 
-// 			game->draw_line( position, ray, red );
+// 			game->draw_line( std::pair<glm::vec3,glm::vec3>(position, ray), red );
 // 		}
 
 // 	}
@@ -210,7 +250,7 @@ void Player::paint_direction( TilePaintingGame *game )
 	const glm::vec4 red = glm::vec4( 1.0F, 0.0F, 0.0F, 1.0F );
 	const glm::vec4 dir = get_trans_matrix() * glm::vec4( 1.0F, 0.0F, 0.0F, 1.0F );
 
-	game->draw_line( position, dir, red );
+	game->draw_line( std::pair<glm::vec3, glm::vec3>( position, dir ), red );
 }
 
 void Player::paint_camera_projection( TilePaintingGame *game )
@@ -219,7 +259,7 @@ void Player::paint_camera_projection( TilePaintingGame *game )
 	const glm::vec4 cam_left = get_trans_matrix() * glm::vec4( 1.0F, -1.0F, 0.0F, 1.0F );
 	const glm::vec4 cam_right = get_trans_matrix() * glm::vec4( 1.0F, 1.0F, 0.0F, 1.0F );
 
-	game->draw_line( cam_left, cam_right, green );
+	game->draw_line( std::pair<glm::vec3, glm::vec3>( cam_left, cam_right ), green );
 }
 
 void Player::paint_character( TilePaintingGame *game )

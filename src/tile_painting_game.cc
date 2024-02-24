@@ -104,12 +104,14 @@ void TilePaintingGame::draw_grid()
 	const glm::vec4 grid_color = { 0.3, 0.3, 0.3, 1.0 };
 
 	for( int line = 0; line <= world_dimension[0]; ++line )
-		draw_line( glm::vec3( line * unit_size, 0, 0 ),
-				   glm::vec3( line * unit_size, world_dimension[1] * unit_size, 0 ), grid_color );
+		draw_line( std::pair<glm::vec3, glm::vec3>( glm::vec3( line * unit_size, 0, 0 ),
+													glm::vec3( line * unit_size, world_dimension[1] * unit_size, 0 ) ),
+				   grid_color );
 
 	for( int line = 0; line <= world_dimension[1]; ++line )
-		draw_line( glm::vec3( 0, line * unit_size, 0 ),
-				   glm::vec3( world_dimension[0] * unit_size, line * unit_size, 0 ), grid_color );
+		draw_line( std::pair<glm::vec3, glm::vec3>( glm::vec3( 0, line * unit_size, 0 ),
+													glm::vec3( world_dimension[0] * unit_size, line * unit_size, 0 ) ),
+				   grid_color );
 }
 
 void TilePaintingGame::draw_level()
@@ -176,10 +178,12 @@ void TilePaintingGame::draw_geometry( std::vector<glm::vec4> &vertex_points, glm
 
 	vertices.resize( vertex_points.size() );
 
-	std::transform( vertex_points.begin(), vertex_points.end(), vertices.begin(),
-					[&colour, &texture_uv]( glm::vec4 point ) {
-						return SDL_Vertex( { SDL_FPoint{ point[0], point[1] }, colour, texture_uv } );
-					} );
+	std::transform( vertex_points.begin(), vertex_points.end(), vertices.begin(), [&]( glm::vec4 point ) {
+		const glm::ivec2 vert( point[0], point[1] );
+		const glm::vec2 fvert( std::clamp( vert[0], 0, world_dimension[0] * unit_size ),
+							   std::clamp( vert[1], 0, world_dimension[1] * unit_size ) );
+		return SDL_Vertex( { { fvert[0], fvert[1] }, colour, texture_uv } );
+	} );
 
 	SDL_RenderGeometry( window, nullptr, vertices.data(), static_cast<int>( vertices.size() ), nullptr, 0 );
 }
@@ -198,11 +202,16 @@ void TilePaintingGame::draw_point( glm::vec3 center, float radius, const glm::ve
 	draw_geometry( circle_verts, colour );
 }
 
-void TilePaintingGame::draw_line( glm::vec3 point_from, glm::vec3 point_to, glm::vec4 color )
+void TilePaintingGame::draw_line( std::pair<glm::vec3, glm::vec3> points, glm::vec4 color )
 {
 	glm::u8vec4 temp( color * 255 );
-	glm::ivec3 pt_from( point_from );
-	glm::ivec3 pt_to( point_to );
+	glm::ivec3 pt_from( points.first );
+	glm::ivec3 pt_to( points.second );
+
+	pt_from[0] = std::clamp( pt_from[0], 0, world_dimension[0] * unit_size );
+	pt_from[1] = std::clamp( pt_from[1], 0, world_dimension[1] * unit_size );
+	pt_to[0] = std::clamp( pt_to[0], 0, world_dimension[0] * unit_size );
+	pt_to[1] = std::clamp( pt_to[1], 0, world_dimension[1] * unit_size );
 
 	SDL_SetRenderDrawColor( window, temp[0], temp[1], temp[2], temp[3] );
 	SDL_RenderDrawLine( window, pt_from[0], pt_from[1], pt_to[0], pt_to[1] );

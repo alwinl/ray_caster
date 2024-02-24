@@ -42,8 +42,10 @@ public:
 	};
 
 	void draw_point( glm::vec3 center, float radius, const glm::vec4 colour );
-	void draw_line( glm::vec3 point_from, glm::vec3 point_to, glm::vec4 color );
+	void draw_line( std::pair<glm::vec3, glm::vec3> points, glm::vec4 color );
 	void draw_geometry( std::vector<glm::vec4> &vertex_points, glm::vec4 color );
+
+	bool is_wall( glm::ivec3 cell ) { return level[cell[0] + cell[1] * world_dimension[0]] == '1'; }
 
 private:
 	SetupParams get_params() override;
@@ -67,8 +69,6 @@ private:
 						"1111111111";
 
 	glm::ivec2 world_dimension{ 10, 10 };
-	// const int world_width = 10;
-	// const int world_height = 10;
 
 	const int unit_size = 80;
 
