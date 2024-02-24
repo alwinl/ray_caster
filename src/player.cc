@@ -50,11 +50,11 @@ void Player::move_back()
 }
 void Player::turn_left()
 {
-	angle -= 1.0;
+	angle -= glm::radians( 1.0 );
 }
 void Player::turn_right()
 {
-	angle += 1.0;
+	angle += glm::radians( 1.0 );
 }
 void Player::zoom_in()
 {
@@ -69,7 +69,7 @@ glm::mat4 Player::get_trans_matrix()
 {
 	glm::mat4 trans = glm::mat4( 1.0F );
 	trans = glm::translate( trans, position );
-	trans = glm::rotate( trans, glm::radians( angle ), glm::vec3( 0.0F, 0.0F, 1.0F ) );
+	trans = glm::rotate( trans, angle, glm::vec3( 0.0F, 0.0F, 1.0F ) );
 	trans = glm::scale( trans, glm::vec3( scale_factor, scale_factor, 1 ) );
 
 	return trans;
@@ -91,7 +91,7 @@ void Player::paint_rays()
 
 	const int resolution = scale_factor * 10; // screen_width
 
-	float rot_angle = glm::radians( angle ) - std::atan( zoom );
+	float rot_angle = angle - std::atan( zoom );
 	const float delta_angle = 2.0F * std::atan( zoom ) / ( static_cast<float>( resolution ) );
 
 	for( int step = 0; step <= resolution; ++step ) {
@@ -111,7 +111,7 @@ void Player::paint_rays()
 			glm::vec2 delta( intersection[0] - position[0], intersection[1] - position[1] );
 
 			// https://www.youtube.com/watch?v=eOCQfxRQ2pY
-			const float distance = delta[0] * cos( glm::radians( angle ) ) + delta[1] * sin( glm::radians( angle ) );
+			const float distance = delta[0] * cos( angle ) + delta[1] * sin( angle );
 
 			const float height = static_cast<float>( scale_factor ) * 400.0F / distance;
 			const std::pair<glm::vec3, glm::vec3> points = {
