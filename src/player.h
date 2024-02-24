@@ -47,6 +47,9 @@ private:
 	glm::mat4 get_trans_matrix();
 
 	void paint_rays( TilePaintingGame *game );
+	void paint_direction( TilePaintingGame *game );
+	void paint_camera_projection( TilePaintingGame *game );
+	void paint_character( TilePaintingGame *game );
 };
 
 #endif // PLAYER_H

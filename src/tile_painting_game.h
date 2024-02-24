@@ -31,9 +31,6 @@
 class TilePaintingGame : public Game
 {
 public:
-	void draw_line( glm::vec3 point_from, glm::vec3 point_to, glm::vec4 color );
-	void draw_geometry( std::vector<glm::vec4> &vertex_points, glm::vec4 color );
-
 	static std::vector<glm::vec4> make_primitive( int total_segments, bool filled );
 
 	static std::vector<glm::vec4> make_rect() { return make_primitive( 4, true ); }
@@ -43,6 +40,10 @@ public:
 	{
 		return make_primitive( total_segments, true );
 	};
+
+	void draw_point( glm::vec3 center, float radius, const glm::vec4 colour );
+	void draw_line( glm::vec3 point_from, glm::vec3 point_to, glm::vec4 color );
+	void draw_geometry( std::vector<glm::vec4> &vertex_points, glm::vec4 color );
 
 private:
 	SetupParams get_params() override;
