@@ -29,6 +29,11 @@ add_executable(ray_caster
 target_link_libraries( ray_caster PRIVATE SDL2_Wrapper )
 
 # for linux we have to link glm::glm. For windows its glm. Go figure..
+if( UNIX )
 target_link_libraries(ray_caster PRIVATE glm::glm)
-#target_link_libraries(ray_caster PRIVATE glm)
+endif(UNIX)
+
+if(WIN32)
+target_link_libraries(ray_caster PRIVATE glm)
+endif(WIN32)
 
