@@ -91,7 +91,7 @@ void TilePaintingGame::update_state( uint64_t /*elapsed_time*/ )
 		hero.zoom_in();
 }
 
-void TilePaintingGame::draw_frame( SDL_Renderer * /*window*/ )
+void TilePaintingGame::draw_frame()
 {
 	draw_grid();
 	draw_level();

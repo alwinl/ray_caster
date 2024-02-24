@@ -50,7 +50,7 @@ private:
 	void setup() override;
 	bool process_event( SDL_Event &event ) override;
 	void update_state( uint64_t elapsed_time ) override;
-	void draw_frame( SDL_Renderer *window ) override;
+	void draw_frame() override;
 
 	void draw_grid();
 	void draw_level();

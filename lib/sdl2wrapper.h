@@ -44,7 +44,7 @@ public:
 	void draw( SDL_Renderer *window )
 	{
 		this->window = window;
-		draw_frame( window );
+		draw_frame();
 	}
 
 protected:
@@ -52,7 +52,7 @@ protected:
 	virtual void setup() = 0;
 	virtual bool process_event( SDL_Event &event ) = 0;
 	virtual void update_state( uint64_t elapsed_time ) = 0;
-	virtual void draw_frame( SDL_Renderer *window ) = 0;
+	virtual void draw_frame() = 0;
 
 	SDL_Renderer *window = nullptr;
 };
@@ -119,5 +119,5 @@ class BlankGame : public Game
 	void setup() override {}
 	bool process_event( SDL_Event &event ) override { return event.type == SDL_QUIT; }
 	void update_state( uint64_t elapsed_time ) override{};
-	void draw_frame( SDL_Renderer *window ) override{};
+	void draw_frame() override{};
 };
