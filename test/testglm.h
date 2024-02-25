@@ -27,7 +27,12 @@ class TestGLM : public CppUnit::TestFixture
 {
 	CPPUNIT_TEST_SUITE( TestGLM );
 
+	CPPUNIT_TEST( check_new_trans_calculation );
+
 	CPPUNIT_TEST_SUITE_END();
+
+private:
+	static void check_new_trans_calculation();
 };
 
 #endif // TESTGLM_H

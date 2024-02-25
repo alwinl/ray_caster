@@ -41,6 +41,6 @@ endif(WIN32)
 target_link_libraries( test_runner PRIVATE SDL2_Wrapper )
 
 
-# add_test( testsdl2wrapper::RunBlankGame test_runner testsdl2wrapper::RunBlankGame )
+add_test( TestGLM::check_new_trans_calculation test_runner TestGLM::check_new_trans_calculation )
 # add_test( testsdl2wrapper::ColouredBackground test_runner testsdl2wrapper::ColouredBackground )
 # add_test( TestTilepainting::RunTileGame test_runner TestTilepainting::RunTileGame )
