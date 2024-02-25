@@ -67,27 +67,33 @@ void Player::zoom_out()
 
 glm::mat4 Player::get_trans_matrix()
 {
-	glm::mat4 trans = glm::mat4( 1.0F );
-	trans = glm::translate( trans, position );
-	trans = glm::rotate( trans, angle, glm::vec3( 0.0F, 0.0F, 1.0F ) );
-	trans = glm::scale( trans, glm::vec3( scale_factor, scale_factor, 1 ) );
+	const auto fscale = static_cast<float>( scale_factor );
 
-	return trans;
+	return glm::mat4( {
+		{ fscale * std::cos( angle ), fscale * std::sin( angle ), 0.0F, 0.0F },
+		{ -fscale * std::sin( angle ), fscale * std::cos( angle ), 0.0F, 0.0F },
+		{ 0.0F, 0.0F, 1.0F, 0.0F },
+		{ position[0], position[1], 0.0F, 1.0F },
+	} );
 }
 
 void Player::draw()
 {
 	paint_rays();
-	// paint_direction();
+
+	// minimap
+	paint_direction();
 	paint_camera_projection();
 	paint_character();
 }
 
 void Player::paint_rays()
 {
-	glm::vec4 grey = glm::vec4( 0.75F, 0.75F, 0.75F, 1.0F );
-	const glm::vec4 red = glm::vec4( 1.0F, 0.0F, 0.0F, 1.0F );
-	const glm::vec4 magenta = glm::vec4( 0.0F, 1.0F, 1.0F, 1.0F );
+	constexpr int x_dim = 0;
+	constexpr int y_dim = 1;
+
+	constexpr glm::vec4 dark_grey = glm::vec4( 0.75F, 0.75F, 0.75F, 1.0F );
+	constexpr glm::vec4 light_grey = glm::vec4( 0.5F, 0.5F, 0.5F, 1.0F );
 
 	const int resolution = scale_factor * 10; // screen_width
 
@@ -98,75 +104,82 @@ void Player::paint_rays()
 
 		const std::pair<int, glm::vec2> result = calc_intersection( rot_angle );
 		const glm::vec3 intersection( result.second * scale_factor, 0.0 );
+		const int wall_side = result.first;
 
-		if( result.first != -1 ) {
-			game->draw_point( intersection, 3, red );
-			game->draw_line( std::pair<glm::vec3, glm::vec3>( position, intersection ), magenta );
+		if( wall_side != -1 ) {
 
-			if( result.first == 0 )
-				grey = glm::vec4( 0.5F, 0.5F, 0.5F, 1.0F );
-			else
-				grey = glm::vec4( 0.75F, 0.75F, 0.75F, 1.0F );
+			glm::vec2 delta( intersection[x_dim] - position[x_dim], intersection[y_dim] - position[y_dim] );
 
-			glm::vec2 delta( intersection[0] - position[0], intersection[1] - position[1] );
-
-			// https://www.youtube.com/watch?v=eOCQfxRQ2pY
-			const float distance = delta[0] * cos( angle ) + delta[1] * sin( angle );
+			// credit: https://www.youtube.com/watch?v=eOCQfxRQ2pY
+			const float distance = delta[x_dim] * cos( angle ) + delta[y_dim] * sin( angle );
 
 			const float height = static_cast<float>( scale_factor ) * 400.0F / distance;
 			const std::pair<glm::vec3, glm::vec3> points = {
 				glm::vec3( 10 * scale_factor + step, 5.0 * scale_factor - height, 0 ),
 				glm::vec3( 10 * scale_factor + step, 5.0 * scale_factor + height, 0 ) };
 
-			game->draw_line( points, grey );
+			game->draw_line( points, ( wall_side == x_dim ) ? light_grey : dark_grey );
 		}
 
 		rot_angle += delta_angle;
 	}
 }
 
-// https://www.youtube.com/watch?v=NbSee-XM7WA
+// adapted based on https://www.youtube.com/watch?v=NbSee-XM7WA
 std::pair<int, glm::vec2> Player::calc_intersection( float angle )
 {
-	glm::vec2 vRayStart = glm::vec2( position[0], position[1] ) / ( 1.0 * scale_factor );
-	glm::vec2 vRayDir = { std::cos( angle ), std::sin( angle ) };
-	glm::vec2 vRayUnitStepSize = { std::sqrt( 1 + ( vRayDir[1] / vRayDir[0] ) * ( vRayDir[1] / vRayDir[0] ) ),
-								   std::sqrt( 1 + ( vRayDir[0] / vRayDir[1] ) * ( vRayDir[0] / vRayDir[1] ) ) };
+	constexpr int x_dim = 0;
+	constexpr int y_dim = 1;
 
-	glm::ivec2 vMapCheck( vRayStart );
-	glm::vec2 vRayLength1D = {
-		( vRayDir[0] < 0 ) ? ( vRayStart[0] - 1.0 * vMapCheck[0] ) * vRayUnitStepSize[0] :
-							 ( 1.0 - ( vRayStart[0] - 1.0 * vMapCheck[0] ) ) * vRayUnitStepSize[0],
-		( vRayDir[1] < 0 ) ? ( vRayStart[1] - 1.0 * vMapCheck[1] ) * vRayUnitStepSize[1] :
-							 ( 1.0 - ( vRayStart[1] - 1.0 * vMapCheck[1] ) ) * vRayUnitStepSize[1] };
+	glm::vec2 ray_start = glm::vec2( position[x_dim], position[y_dim] ) / ( 1.0 * scale_factor );
+	glm::vec2 ray_dir = { std::cos( angle ), std::sin( angle ) };
+	glm::vec2 unit_step_size = {
+		std::sqrt( 1 + ( ray_dir[y_dim] / ray_dir[x_dim] ) * ( ray_dir[y_dim] / ray_dir[x_dim] ) ),
+		std::sqrt( 1 + ( ray_dir[x_dim] / ray_dir[y_dim] ) * ( ray_dir[x_dim] / ray_dir[y_dim] ) ) };
 
-	glm::ivec2 vStep = { ( vRayDir[0] < 0 ) ? -1 : 1, ( vRayDir[1] < 0 ) ? -1 : 1 };
+	glm::ivec2 cell_to_test( ray_start );
 
-	bool bTileFound = false;
-	const float fMaxDistance = 100.0;
-	float fDistance = 0.0;
-	int walk_side = -1;
+	glm::vec2 ray_length_by_dimension;
+	glm::ivec2 step;
 
-	while( !bTileFound && fDistance < fMaxDistance ) {
+	for( const int dim : { x_dim, y_dim } ) {
 
-		walk_side = ( vRayLength1D[0] < vRayLength1D[1] ) ? 0 : 1;
+		const float offset = ray_start[dim] - static_cast<float>( cell_to_test[dim] );
 
-		vMapCheck[walk_side] += vStep[walk_side];
-		fDistance = vRayLength1D[walk_side];
-		vRayLength1D[walk_side] += vRayUnitStepSize[walk_side];
-
-		bTileFound = game->is_wall( vMapCheck );
+		if( ray_dir[dim] < 0 ) {
+			step[dim] = -1;
+			ray_length_by_dimension[dim] = offset * unit_step_size[dim];
+		} else {
+			step[dim] = 1;
+			ray_length_by_dimension[dim] = ( 1.0F - offset ) * unit_step_size[dim];
+		}
 	}
 
-	if( !bTileFound )
+	constexpr float max_distance = 100.0;
+	float current_side_distance = 0.0;
+	bool wall_found = false;
+	int walk_side = -1;
+
+	while( !wall_found && current_side_distance < max_distance ) {
+
+		walk_side = ( ray_length_by_dimension[x_dim] < ray_length_by_dimension[y_dim] ) ? x_dim : y_dim;
+
+		cell_to_test[walk_side] += step[walk_side];
+		current_side_distance = ray_length_by_dimension[walk_side];
+		ray_length_by_dimension[walk_side] += unit_step_size[walk_side];
+
+		wall_found = game->is_wall( cell_to_test );
+	}
+
+	if( !wall_found )
 		return std::make_pair( -1, glm::vec2() );
 
-	return std::make_pair( walk_side, glm::vec2( { vRayStart + vRayDir * fDistance } ) );
+	return std::make_pair( walk_side, glm::vec2( { ray_start + ray_dir * current_side_distance } ) );
 }
 
 void Player::paint_direction()
 {
-	const glm::vec4 red = glm::vec4( 1.0F, 0.0F, 0.0F, 1.0F );
+	constexpr glm::vec4 red = glm::vec4( 1.0F, 0.0F, 0.0F, 1.0F );
 	const glm::vec4 dir = get_trans_matrix() * glm::vec4( 1.0F, 0.0F, 0.0F, 1.0F );
 
 	game->draw_line( std::pair<glm::vec3, glm::vec3>( position, dir ), red );
@@ -174,16 +187,22 @@ void Player::paint_direction()
 
 void Player::paint_camera_projection()
 {
-	const glm::vec4 green = glm::vec4( 0.0F, 1.0F, 0.0F, 1.0F );
+	constexpr glm::vec4 green = glm::vec4( 0.0F, 1.0F, 0.0F, 1.0F );
+	constexpr glm::vec4 blue = glm::vec4( 0.0F, 0.0F, 1.0F, 1.0F );
+
 	const glm::vec4 cam_left = get_trans_matrix() * glm::vec4( 1.0F, -zoom, 0.0F, 1.0F );
 	const glm::vec4 cam_right = get_trans_matrix() * glm::vec4( 1.0F, zoom, 0.0F, 1.0F );
+	const glm::vec4 ray_left = get_trans_matrix() * glm::vec4( 2.0F, -2.0 * zoom, 0.0F, 1.0F );
+	const glm::vec4 ray_right = get_trans_matrix() * glm::vec4( 2.0F, 2.0 * zoom, 0.0F, 1.0F );
 
 	game->draw_line( std::pair<glm::vec3, glm::vec3>( cam_left, cam_right ), green );
+	game->draw_line( std::pair<glm::vec3, glm::vec3>( position, ray_left ), blue );
+	game->draw_line( std::pair<glm::vec3, glm::vec3>( position, ray_right ), blue );
 }
 
 void Player::paint_character()
 {
-	const glm::vec4 yellow = glm::vec4( 1.0F, 1.0F, 0.0F, 1.0F );
+	constexpr glm::vec4 yellow = glm::vec4( 1.0F, 1.0F, 0.0F, 1.0F );
 
 	game->draw_point( position, 6.0, yellow );
 }
