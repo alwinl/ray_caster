@@ -46,6 +46,12 @@ public:
 	void draw_geometry( std::vector<glm::vec4> &vertex_points, glm::vec4 color );
 
 	bool is_wall( glm::ivec2 cell );
+	void paint_rays();
+	std::pair<int, glm::vec2> calc_intersection( float angle, glm::vec2 pos );
+
+	void paint_direction();
+	void paint_camera_projection();
+	void paint_character();
 
 private:
 	SetupParams get_params() override;

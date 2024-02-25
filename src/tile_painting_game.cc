@@ -93,10 +93,14 @@ void TilePaintingGame::update_state( uint64_t /*elapsed_time*/ )
 
 void TilePaintingGame::draw_frame()
 {
+	paint_rays();
+
+	// minimap
 	draw_grid();
 	draw_level();
-
-	hero.draw();
+	paint_direction();
+	paint_camera_projection();
+	paint_character();
 }
 
 void TilePaintingGame::draw_grid()
@@ -223,4 +227,132 @@ bool TilePaintingGame::is_wall( glm::ivec2 cell )
 		return false;
 
 	return level[cell[0] + cell[1] * world_dimension[0]] == '1';
+}
+
+void TilePaintingGame::paint_rays()
+{
+	const float angle = hero.get_angle();
+	const glm::vec3 pos = hero.get_position();
+	const float zoom = hero.get_zoom();
+
+	constexpr int x_dim = 0;
+	constexpr int y_dim = 1;
+
+	constexpr glm::vec4 dark_grey = glm::vec4( 0.75F, 0.75F, 0.75F, 1.0F );
+	constexpr glm::vec4 light_grey = glm::vec4( 0.5F, 0.5F, 0.5F, 1.0F );
+
+	const int resolution = unit_size * 10; // screen_width
+
+	float rot_angle = angle - std::atan( zoom );
+	const float delta_angle = 2.0F * std::atan( zoom ) / ( static_cast<float>( resolution ) );
+
+	for( int step = 0; step <= resolution; ++step ) {
+
+		const std::pair<int, glm::vec2> result = calc_intersection( rot_angle, pos );
+		const glm::vec3 intersection( result.second * unit_size, 0.0 );
+		const int wall_side = result.first;
+
+		if( wall_side != -1 ) {
+
+			glm::vec2 delta( intersection[x_dim] - pos[x_dim], intersection[y_dim] - pos[y_dim] );
+
+			// credit: https://www.youtube.com/watch?v=eOCQfxRQ2pY
+			const float distance = delta[x_dim] * cos( angle ) + delta[y_dim] * sin( angle );
+
+			const float height = static_cast<float>( unit_size ) * 400.0F / distance;
+			const std::pair<glm::vec3, glm::vec3> points = {
+				glm::vec3( 10 * unit_size + step, 5.0 * unit_size - height, 0 ),
+				glm::vec3( 10 * unit_size + step, 5.0 * unit_size + height, 0 ) };
+
+			draw_line( points, ( wall_side == x_dim ) ? light_grey : dark_grey );
+		}
+
+		rot_angle += delta_angle;
+	}
+}
+
+// adapted based on https://www.youtube.com/watch?v=NbSee-XM7WA
+std::pair<int, glm::vec2> TilePaintingGame::calc_intersection( float angle, glm::vec2 pos )
+{
+	constexpr int x_dim = 0;
+	constexpr int y_dim = 1;
+
+	glm::vec2 ray_start = glm::vec2( pos[x_dim], pos[y_dim] ) / ( 1.0 * unit_size );
+	glm::vec2 ray_dir = { std::cos( angle ), std::sin( angle ) };
+	glm::vec2 unit_step_size = {
+		std::sqrt( 1 + ( ray_dir[y_dim] / ray_dir[x_dim] ) * ( ray_dir[y_dim] / ray_dir[x_dim] ) ),
+		std::sqrt( 1 + ( ray_dir[x_dim] / ray_dir[y_dim] ) * ( ray_dir[x_dim] / ray_dir[y_dim] ) ) };
+
+	glm::ivec2 cell_to_test( ray_start );
+
+	glm::vec2 ray_length_by_dimension;
+	glm::ivec2 step;
+
+	for( const int dim : { x_dim, y_dim } ) {
+
+		const float offset = ray_start[dim] - static_cast<float>( cell_to_test[dim] );
+
+		if( ray_dir[dim] < 0 ) {
+			step[dim] = -1;
+			ray_length_by_dimension[dim] = offset * unit_step_size[dim];
+		} else {
+			step[dim] = 1;
+			ray_length_by_dimension[dim] = ( 1.0F - offset ) * unit_step_size[dim];
+		}
+	}
+
+	constexpr float max_distance = 100.0;
+	float current_side_distance = 0.0;
+	bool wall_found = false;
+	int walk_side = -1;
+
+	while( !wall_found && current_side_distance < max_distance ) {
+
+		walk_side = ( ray_length_by_dimension[x_dim] < ray_length_by_dimension[y_dim] ) ? x_dim : y_dim;
+
+		cell_to_test[walk_side] += step[walk_side];
+		current_side_distance = ray_length_by_dimension[walk_side];
+		ray_length_by_dimension[walk_side] += unit_step_size[walk_side];
+
+		wall_found = is_wall( cell_to_test );
+	}
+
+	if( !wall_found )
+		return std::make_pair( -1, glm::vec2() );
+
+	return std::make_pair( walk_side, glm::vec2( { ray_start + ray_dir * current_side_distance } ) );
+}
+
+void TilePaintingGame::paint_direction()
+{
+	constexpr glm::vec4 red = glm::vec4( 1.0F, 0.0F, 0.0F, 1.0F );
+	const glm::vec4 dir = hero.get_trans_matrix() * glm::vec4( 1.0F, 0.0F, 0.0F, 1.0F );
+
+	draw_line( std::pair<glm::vec3, glm::vec3>( hero.get_position(), dir ), red );
+}
+
+void TilePaintingGame::paint_camera_projection()
+{
+	const glm::mat4 trans = hero.get_trans_matrix();
+	const float zoom = hero.get_zoom();
+	const glm::vec3 pos = hero.get_position();
+
+	constexpr glm::vec4 green = glm::vec4( 0.0F, 1.0F, 0.0F, 1.0F );
+	constexpr glm::vec4 blue = glm::vec4( 0.0F, 0.0F, 1.0F, 1.0F );
+
+	const glm::vec4 cam_left = trans * glm::vec4( 1.0F, -zoom, 0.0F, 1.0F );
+	const glm::vec4 cam_right = trans * glm::vec4( 1.0F, zoom, 0.0F, 1.0F );
+	const glm::vec4 ray_left = trans * glm::vec4( 2.0F, -2.0 * zoom, 0.0F, 1.0F );
+	const glm::vec4 ray_right = trans * glm::vec4( 2.0F, 2.0 * zoom, 0.0F, 1.0F );
+
+	draw_line( std::pair<glm::vec3, glm::vec3>( cam_left, cam_right ), green );
+	draw_line( std::pair<glm::vec3, glm::vec3>( pos, ray_left ), blue );
+	draw_line( std::pair<glm::vec3, glm::vec3>( pos, ray_right ), blue );
+}
+
+void TilePaintingGame::paint_character()
+{
+	constexpr glm::vec4 yellow = glm::vec4( 1.0F, 1.0F, 0.0F, 1.0F );
+
+	draw_point( hero.get_position(), 6.0, yellow );
 }
