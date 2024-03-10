@@ -26,28 +26,16 @@
 
 #include <glm/glm.hpp>
 
-#include "player.h"
+//#include "player.h"
 
 class TilePaintingGame : public Game
 {
 public:
-	static std::vector<glm::vec4> make_primitive( int total_segments, bool filled );
-
-	static std::vector<glm::vec4> make_rect() { return make_primitive( 4, true ); }
-	static std::vector<glm::vec4> make_rect_outline() { return make_primitive( 4, false ); }
-	static std::vector<glm::vec4> make_circle( int total_segments ) { return make_primitive( total_segments, true ); };
-	static std::vector<glm::vec4> make_circle_outline( int total_segments )
-	{
-		return make_primitive( total_segments, true );
-	};
-
-	void draw_point( glm::vec3 center, float radius, const glm::vec4 colour );
-	void draw_line( std::pair<glm::vec3, glm::vec3> points, glm::vec4 color );
-	void draw_geometry( std::vector<glm::vec4> &vertex_points, glm::vec4 color );
+	// static std::vector<glm::vec4> make_primitive( int total_segments, bool filled );
 
 	bool is_wall( glm::ivec2 cell );
 	void paint_rays();
-	std::pair<int, glm::vec2> calc_intersection( float angle, glm::vec2 pos );
+	std::pair<int, glm::vec2> calc_intersection( float angle, glm::vec2 ray_start );
 
 	void paint_direction();
 	void paint_camera_projection();
@@ -76,9 +64,10 @@ private:
 
 	glm::ivec2 world_dimension{ 10, 10 };
 
-	const int unit_size = 80;
+	const int screen_width = 640;
+	const int screen_height =480;
 
-	Player hero{ this, { 100, 100 }, unit_size };
+	float unit_size;
 
 	bool quit = false;
 
@@ -90,6 +79,13 @@ private:
 	uint8_t KEY_Z = 0;
 
 	uint8_t KEY_IS_DOWN = 0x01;
+
+	glm::vec3 player_position = {20, 20, 0.0};
+	float player_angle = 0.0;
+	float player_zoom = 0.4;
+	glm::mat4 player_matrix;
+
+
 };
 
 #endif // TILEPAINTINGGAME_H

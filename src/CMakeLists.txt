@@ -23,7 +23,7 @@ find_package(glm CONFIG REQUIRED)
 add_executable(ray_caster
 	main.cc
 	tile_painting_game.cc
-	player.cc
+	#player.cc
 )
 
 target_link_libraries( ray_caster PRIVATE SDL2_Wrapper )

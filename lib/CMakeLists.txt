@@ -27,3 +27,14 @@ add_library(SDL2_Wrapper INTERFACE)
 target_include_directories(SDL2_Wrapper INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(SDL2_Wrapper INTERFACE ${SDL2_LIBRARIES})
 # target_link_libraries(SDL2_Wrapper INTERFACE ${OPENGL_LIBRARIES})
+
+find_package(glm CONFIG REQUIRED)
+
+# for linux we have to link glm::glm. For windows its glm. Go figure..
+if( UNIX )
+target_link_libraries(SDL2_Wrapper INTERFACE glm::glm)
+endif(UNIX)
+
+if(WIN32)
+target_link_libraries(SDL2_Wrapper INTERFACE glm)
+endif(WIN32)
