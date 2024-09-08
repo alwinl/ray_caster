@@ -22,25 +22,12 @@
 
 #include "sdl2wrapper.h"
 
-#include <vector>
+// #include <vector>
 
 #include <glm/glm.hpp>
 
-//#include "player.h"
-
 class TilePaintingGame : public Game
 {
-public:
-	// static std::vector<glm::vec4> make_primitive( int total_segments, bool filled );
-
-	bool is_wall( glm::ivec2 cell );
-	void paint_rays();
-	std::pair<int, glm::vec2> calc_intersection( float angle, glm::vec2 ray_start );
-
-	void paint_direction();
-	void paint_camera_projection();
-	void paint_character();
-
 private:
 	SetupParams get_params() override;
 	void setup() override;
@@ -48,8 +35,19 @@ private:
 	void update_state( uint64_t elapsed_time ) override;
 	void draw_frame() override;
 
-	void draw_grid();
-	void draw_level();
+	void paint_floor();
+	void paint_ceiling();
+	void paint_rays();
+	void paint_grid();
+	void paint_level();
+	void paint_direction();
+	void paint_camera_projection();
+	void paint_character();
+
+	bool is_wall( glm::ivec2 cell );
+	std::pair<int, glm::vec2> calc_intersection( float angle, glm::vec2 ray_start );
+
+	// static std::vector<glm::vec4> make_primitive( int total_segments, bool filled );
 
 	std::string level = "1111111111"
 						"1000100001"
@@ -60,7 +58,7 @@ private:
 						"1000000001"
 						"1000001001"
 						"1000000001"
-						"1111111111";
+						"1111011111";
 
 	glm::ivec2 world_dimension{ 10, 10 };
 
@@ -72,20 +70,18 @@ private:
 	bool quit = false;
 
 	uint8_t KEY_UP = 0;
-	uint8_t KEY_DOWN = 0;
-	uint8_t KEY_LEFT = 0;
-	uint8_t KEY_RIGHT = 0;
-	uint8_t KEY_X = 0;
-	uint8_t KEY_Z = 0;
+	uint8_t KEY_DOWN = 1;
+	uint8_t KEY_LEFT = 2;
+	uint8_t KEY_RIGHT = 3;
+	uint8_t KEY_X = 4;
+	uint8_t KEY_Z = 5;
 
-	uint8_t KEY_IS_DOWN = 0x01;
+	uint8_t key_state = 0;
 
 	glm::vec3 player_position = {20, 20, 0.0};
 	float player_angle = 0.0;
 	float player_zoom = 0.4;
 	glm::mat4 player_matrix;
-
-
 };
 
 #endif // TILEPAINTINGGAME_H

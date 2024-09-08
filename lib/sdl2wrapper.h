@@ -80,7 +80,7 @@ public:
 		trans = glm::translate( trans, center );
 		trans = glm::scale( trans, glm::vec3( radius ) );
 
-		const auto delta_angle = static_cast<float>( glm::radians( 360.0 / total_segments ) );
+		const auto delta_angle = glm::radians( 360.0F / (1.0F * total_segments) );
 		glm::vec2 outer_point = glm::vec2( 1.0, 0.0 );
 		std::vector<glm::vec4> circle_verts;
 
@@ -216,7 +216,8 @@ public:
 
 			SDL_Event event;
 
-			while( SDL_PollEvent( &event ) ) quit = aGame.input( event );
+			while( SDL_PollEvent( &event ) ) 
+				quit = aGame.input( event );
 
 			if( quit )
 				break;

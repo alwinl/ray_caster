@@ -19,14 +19,14 @@
 
 #include "tile_painting_game.h"
 
-#include <iostream>
+// #include <iostream>
 
-#include <algorithm>
-#include <array>
-#include <cmath>
-#include <iterator>
-#include <string>
-#include <vector>
+// #include <algorithm>
+// #include <array>
+// #include <cmath>
+// #include <iterator>
+// #include <string>
+// #include <vector>
 
 #include "sdl2wrapper.h"
 
@@ -38,7 +38,7 @@
 
 SetupParams TilePaintingGame::get_params()
 {
-	unit_size = 10;
+	unit_size = 10.0F;
 
 	return SetupParams( { "Ray Caster", screen_width, screen_height, 0,
 						  SDL_RENDERER_ACCELERATED } );
@@ -50,24 +50,24 @@ bool TilePaintingGame::process_event( SDL_Event &event )
 {
 	if( event.type == SDL_KEYDOWN ) {
 		switch( event.key.keysym.sym ) {
-		case SDLK_UP: KEY_UP |= KEY_IS_DOWN; break;
-		case SDLK_DOWN: KEY_DOWN |= KEY_IS_DOWN; break;
-		case SDLK_LEFT: KEY_LEFT |= KEY_IS_DOWN; break;
-		case SDLK_RIGHT: KEY_RIGHT |= KEY_IS_DOWN; break;
-		case SDLK_x: KEY_X |= KEY_IS_DOWN; break;
-		case SDLK_z: KEY_Z |= KEY_IS_DOWN; break;
+		case SDLK_UP:    key_state |= 1 << KEY_UP;    break;
+		case SDLK_DOWN:  key_state |= 1 << KEY_DOWN;  break;
+		case SDLK_LEFT:  key_state |= 1 << KEY_LEFT;  break;
+		case SDLK_RIGHT: key_state |= 1 << KEY_RIGHT; break;
+		case SDLK_x:     key_state |= 1 << KEY_X;     break;
+		case SDLK_z:     key_state |= 1 << KEY_Z;     break;
 		}
 	}
 
 	if( event.type == SDL_KEYUP ) {
 		switch( event.key.keysym.sym ) {
-		case SDLK_UP: KEY_UP &= ~KEY_IS_DOWN; break;
-		case SDLK_DOWN: KEY_DOWN &= ~KEY_IS_DOWN; break;
-		case SDLK_LEFT: KEY_LEFT &= ~KEY_IS_DOWN; break;
-		case SDLK_RIGHT: KEY_RIGHT &= ~KEY_IS_DOWN; break;
-		case SDLK_x: KEY_X &= ~KEY_IS_DOWN; break;
-		case SDLK_z: KEY_Z &= ~KEY_IS_DOWN; break;
-		case SDLK_ESCAPE: quit = true; break;
+		case SDLK_UP:    key_state &= ~(1 << KEY_UP);    break;
+		case SDLK_DOWN:  key_state &= ~(1 << KEY_DOWN);  break;
+		case SDLK_LEFT:  key_state &= ~(1 << KEY_LEFT);  break;
+		case SDLK_RIGHT: key_state &= ~(1 << KEY_RIGHT); break;
+		case SDLK_x:     key_state &= ~(1 << KEY_X);     break;
+		case SDLK_z:     key_state &= ~(1 << KEY_Z);     break;
+		case SDLK_ESCAPE: quit = true;                   break;
 		}
 	}
 
@@ -79,36 +79,33 @@ bool TilePaintingGame::process_event( SDL_Event &event )
 
 void TilePaintingGame::update_state( uint64_t elapsed_time )
 {
-	if( ( KEY_UP & KEY_IS_DOWN ) != 0 ) {
+	if( key_state & (1 << KEY_UP) ) {
 		const glm::vec3 new_position = player_matrix * glm::vec4( 0.005F * elapsed_time, 0.0F, 0.0F, 1.0F );
 
-		if( !is_wall( glm::ivec2( new_position[0] / static_cast<float>( unit_size ),
-										new_position[1] / static_cast<float>( unit_size ) ) ) )
+		if( !is_wall( glm::ivec2( new_position[0] / unit_size,	new_position[1] / unit_size ) ) )
 			player_position = new_position;
 	}
 
-	if( ( KEY_DOWN & KEY_IS_DOWN ) != 0 ) {
+	if( key_state & (1 << KEY_DOWN) ) {
 		const glm::vec3 new_position = player_matrix * glm::vec4( -0.005F * elapsed_time, 0.0F, 0.0F, 1.0F );
 
-		if( !is_wall( glm::ivec2( new_position[0] / static_cast<float>( unit_size ),
-										new_position[1] / static_cast<float>( unit_size ) ) ) )
+		if( !is_wall( glm::ivec2( new_position[0] / unit_size,	new_position[1] / unit_size ) ) )
 			player_position = new_position;
-
 	}
-	if( ( KEY_LEFT & KEY_IS_DOWN ) != 0 )
+
+	if( key_state & (1 << KEY_LEFT) )
 		player_angle -= glm::radians( 0.1 * elapsed_time );
-	if( ( KEY_RIGHT & KEY_IS_DOWN ) != 0 )
+	if( key_state & (1 << KEY_RIGHT) )
 		player_angle += glm::radians( 0.1 * elapsed_time );
-	if( ( KEY_X & KEY_IS_DOWN ) != 0 )
+
+	if( key_state & (1 << KEY_X) )
 		player_zoom -= 0.001 * elapsed_time;
-	if( ( KEY_Z & KEY_IS_DOWN ) != 0 )
+	if( key_state & (1 << KEY_Z) )
 		player_zoom += 0.001 * elapsed_time;
 
-	const auto fscale = static_cast<float>( unit_size );
-
 	player_matrix =  glm::mat4( {
-		{ fscale * std::cos( player_angle ), fscale * std::sin( player_angle ), 0.0F, 0.0F },
-		{ -fscale * std::sin( player_angle ), fscale * std::cos( player_angle ), 0.0F, 0.0F },
+		{ unit_size * std::cos( player_angle ), unit_size * std::sin( player_angle ), 0.0F, 0.0F },
+		{ -unit_size * std::sin( player_angle ), unit_size * std::cos( player_angle ), 0.0F, 0.0F },
 		{ 0.0F, 0.0F, 1.0F, 0.0F },
 		{ player_position[0], player_position[1], 0.0F, 1.0F },
 	} );
@@ -116,19 +113,91 @@ void TilePaintingGame::update_state( uint64_t elapsed_time )
 
 void TilePaintingGame::draw_frame()
 {
+	paint_floor();
+	paint_ceiling();
 	paint_rays();
 
 	// minimap
-	draw_grid();
-	draw_level();
+	paint_grid();
+	paint_level();
 	paint_direction();
 	paint_camera_projection();
 	paint_character();
 }
 
-void TilePaintingGame::draw_grid()
+void TilePaintingGame::paint_floor()
 {
-	const glm::vec4 grid_color = { 0.3, 0.3, 0.3, 1.0 };
+	constexpr glm::vec4 green = glm::vec4( 0.0F, 1.0F, 0.0F, 1.0F );
+	
+	std::pair<glm::vec4,glm::vec4> points{ 
+		glm::vec4(0.0F, screen_height/2.0F, 0.0F, 1.0F), 
+		glm::vec4(screen_width * 1.0F, screen_height * 1.0F, 0.0F, 1.0F)
+	};
+
+	draw_rect( points, green ); 
+}
+
+void TilePaintingGame::paint_ceiling()
+{
+	constexpr glm::vec4 blue = glm::vec4( 0.0F, 0.0F, 0.8F, 1.0F );
+
+	std::pair<glm::vec4,glm::vec4> points{ 
+		glm::vec4(0.0F, 0.0F, 0.0F, 1.0F), 
+		glm::vec4(screen_width * 1.0F, screen_height/2.0F, 0.0F, 1.0F)
+	};
+
+	draw_rect( points, blue ); 
+}
+
+void TilePaintingGame::paint_rays()
+{
+	constexpr int x_dim = 0;
+	constexpr int y_dim = 1;
+
+	constexpr glm::vec4 dark_grey = glm::vec4( 0.75F, 0.75F, 0.75F, 1.0F );
+	constexpr glm::vec4 light_grey = glm::vec4( 0.5F, 0.5F, 0.5F, 1.0F );
+	constexpr glm::vec4 black = glm::vec4( 0.0F, 0.0F, 0.0F, 1.0F );
+
+	const int resolution = screen_width;
+
+	float rot_angle = player_angle - std::atan( player_zoom );
+	const float delta_angle = 2.0F * std::atan( player_zoom ) / ( 1.0F * resolution );
+
+	for( int step = 0; step <= resolution; ++step ) {
+
+		const glm::vec2 ray_start = glm::vec2( player_position ) / unit_size;
+
+		const std::pair<int, glm::vec2> result = calc_intersection( rot_angle, ray_start );
+		const glm::vec2 intersection( result.second * unit_size );
+		const int wall_side = result.first;
+
+		if( wall_side != -1 ) {
+
+			glm::vec2 delta = intersection - glm::vec2(player_position);
+
+			// credit: https://www.youtube.com/watch?v=eOCQfxRQ2pY
+			const float distance = delta[x_dim] * std::cos( player_angle ) + delta[y_dim] * std::sin( player_angle );
+
+			const float height = unit_size * 400.0F / distance;
+			const std::pair<glm::vec3, glm::vec3> points = {
+				glm::vec3( step, (screen_height / 2.0) - height, 0 ),
+				glm::vec3( step, (screen_height / 2.0) + height, 0 ) };
+
+			const float horz_offset = (1.0F * intersection[x_dim]) / unit_size;
+
+			if( horz_offset < .0 )
+				draw_line( points, black );
+			else
+				draw_line( points, ( wall_side == x_dim ) ? light_grey : dark_grey );
+		}
+
+		rot_angle += delta_angle;
+	}
+}
+
+void TilePaintingGame::paint_grid()
+{
+	constexpr glm::vec4 grid_color = { 0.3, 0.3, 0.3, 1.0 };
 
 	for( int line = 0; line <= world_dimension[0]; ++line )
 		draw_line( { {line * unit_size, 0, 0}, {line * unit_size, world_dimension[1] * unit_size, 0}  }, grid_color );
@@ -137,10 +206,10 @@ void TilePaintingGame::draw_grid()
 		draw_line( { { 0, line * unit_size, 0},	{world_dimension[0] * unit_size, line * unit_size, 0} }, grid_color );
 }
 
-void TilePaintingGame::draw_level()
+void TilePaintingGame::paint_level()
 {
-	const glm::vec4 white = { 1.0F, 1.0F, 1.0F, 1.0F };
-	const glm::vec4 black = { 0.0F, 0.0F, 0.0F, 1.0F };
+	constexpr glm::vec4 white = { 1.0F, 1.0F, 1.0F, 1.0F };
+	constexpr glm::vec4 black = { 0.0F, 0.0F, 0.0F, 1.0F };
 
 	std::pair<glm::vec4,glm::vec4> rect_points;
 
@@ -182,111 +251,30 @@ void TilePaintingGame::paint_character()
 	draw_point( player_position, 6.0, yellow );
 }
 
-// std::vector<glm::vec4> TilePaintingGame::make_primitive( int total_segments, bool filled )
-// {
-// 	std::vector<glm::vec4> vertex_points;
-
-// 	const auto delta_angle = static_cast<float>( glm::radians( 360.0 / total_segments ) );
-// 	glm::vec2 outer_point = glm::vec2( 1.0, 0.0 );
-
-// 	for( int segment = 0; segment < total_segments; ++segment ) {
-
-// 		if( filled )
-// 			vertex_points.emplace_back( 0.0, 0.0, 0.0, 1.0 );
-
-// 		vertex_points.emplace_back( outer_point, 0.0, 1.0 );
-
-// 		outer_point = glm::rotate( outer_point, delta_angle );
-
-// 		vertex_points.emplace_back( outer_point, 0.0, 1.0 );
-// 	}
-
-// 	return vertex_points;
-// }
-
-bool TilePaintingGame::is_wall( glm::ivec2 cell )
-{
-	if( cell[0] < 0 || cell[0] > world_dimension[0] || cell[1] < 0 || cell[1] > world_dimension[1] )
-		return false;
-
-	return level[cell[0] + cell[1] * world_dimension[0]] == '1';
-}
-
-void TilePaintingGame::paint_rays()
-{
-	constexpr int x_dim = 0;
-	constexpr int y_dim = 1;
-
-	constexpr glm::vec4 dark_grey = glm::vec4( 0.75F, 0.75F, 0.75F, 1.0F );
-	constexpr glm::vec4 light_grey = glm::vec4( 0.5F, 0.5F, 0.5F, 1.0F );
-	constexpr glm::vec4 black = glm::vec4( 0.0F, 0.0F, 0.0F, 1.0F );
-
-	const int resolution = screen_width;
-
-	float rot_angle = player_angle - std::atan( player_zoom );
-	const float delta_angle = 2.0F * std::atan( player_zoom ) / ( static_cast<float>( resolution ) );
-
-	for( int step = 0; step <= resolution; ++step ) {
-
-		const glm::vec2 ray_start = glm::vec2( player_position[x_dim], player_position[y_dim] ) / ( 1.0 * unit_size );
-		const std::pair<int, glm::vec2> result = calc_intersection( rot_angle, ray_start );
-		const glm::vec3 intersection( result.second * unit_size, 0.0 );
-		const int wall_side = result.first;
-
-		if( wall_side != -1 ) {
-
-			glm::vec2 delta( intersection[x_dim] - player_position[x_dim], intersection[y_dim] - player_position[y_dim] );
-
-			//const glm::ivec2 cell_hit( intersection / unit_size );
-
-			const float horz_offset = std::fmod(intersection[x_dim], unit_size);
-
-			// credit: https://www.youtube.com/watch?v=eOCQfxRQ2pY
-			const float distance = delta[x_dim] * std::cos( player_angle ) + delta[y_dim] * std::sin( player_angle );
-
-			const float height = static_cast<float>( unit_size ) * 400.0F / distance;
-			const std::pair<glm::vec3, glm::vec3> points = {
-				glm::vec3( step, (screen_height / 2.0) - height, 0 ),
-				glm::vec3( step, (screen_height / 2.0) + height, 0 ) };
-
-			if( horz_offset < .0 )
-				draw_line( points, black );
-			else
-				draw_line( points, ( wall_side == x_dim ) ? light_grey : dark_grey );
-		}
-
-		rot_angle += delta_angle;
-	}
-}
-
 // adapted based on https://www.youtube.com/watch?v=NbSee-XM7WA
 std::pair<int, glm::vec2> TilePaintingGame::calc_intersection( float angle, glm::vec2 ray_start )
 {
 	constexpr int x_dim = 0;
 	constexpr int y_dim = 1;
 
-	glm::vec2 ray_dir = { std::cos( angle ), std::sin( angle ) };
-	glm::vec2 unit_step_size = {
+	const glm::vec2 ray_dir = { std::cos( angle ), std::sin( angle ) };
+
+	const glm::ivec2 step = {
+		(ray_dir[x_dim] < 0) ? -1 : 1, 
+		(ray_dir[y_dim] < 0) ? -1 : 1
+	};
+
+	const glm::vec2 unit_step_size = {
 		std::sqrt( 1 + ( ray_dir[y_dim] / ray_dir[x_dim] ) * ( ray_dir[y_dim] / ray_dir[x_dim] ) ),
-		std::sqrt( 1 + ( ray_dir[x_dim] / ray_dir[y_dim] ) * ( ray_dir[x_dim] / ray_dir[y_dim] ) ) };
+		std::sqrt( 1 + ( ray_dir[x_dim] / ray_dir[y_dim] ) * ( ray_dir[x_dim] / ray_dir[y_dim] ) )
+	};
 
-	glm::ivec2 cell_to_test( ray_start );
-
-	glm::vec2 ray_length_by_dimension;
-	glm::ivec2 step;
-
-	for( const int dim : { x_dim, y_dim } ) {
-
-		const float offset = ray_start[dim] - static_cast<float>( cell_to_test[dim] );
-
-		if( ray_dir[dim] < 0 ) {
-			step[dim] = -1;
-			ray_length_by_dimension[dim] = offset * unit_step_size[dim];
-		} else {
-			step[dim] = 1;
-			ray_length_by_dimension[dim] = ( 1.0F - offset ) * unit_step_size[dim];
-		}
-	}
+	glm::ivec2 cell_to_test = ray_start;
+	const glm::vec2 first_offset = ( ray_start - glm::vec2(cell_to_test) );
+	glm::vec2 ray_length_by_dimension = {
+		( ( ray_dir[x_dim] < 0 ) ? first_offset[x_dim] : ( 1.0F - first_offset[x_dim] ) ) * unit_step_size[x_dim],
+		( ( ray_dir[y_dim] < 0 ) ? first_offset[y_dim] : ( 1.0F - first_offset[y_dim] ) ) * unit_step_size[y_dim]
+	};
 
 	constexpr float max_distance = 100.0;
 	float current_side_distance = 0.0;
@@ -309,3 +297,37 @@ std::pair<int, glm::vec2> TilePaintingGame::calc_intersection( float angle, glm:
 
 	return std::make_pair( walk_side, glm::vec2( { ray_start + ray_dir * current_side_distance } ) );
 }
+
+bool TilePaintingGame::is_wall( glm::ivec2 cell )
+{
+	constexpr int x_dim = 0;
+	constexpr int y_dim = 1;
+
+	if( cell[x_dim] < 0 || cell[x_dim] > world_dimension[x_dim] 
+	 || cell[y_dim] < 0 || cell[y_dim] > world_dimension[y_dim] )
+		return false;
+
+	return level[cell[x_dim] + cell[y_dim] * world_dimension[x_dim]] == '1';
+}
+
+// std::vector<glm::vec4> TilePaintingGame::make_primitive( int total_segments, bool filled )
+// {
+// 	std::vector<glm::vec4> vertex_points;
+
+// 	const auto delta_angle = static_cast<float>( glm::radians( 360.0 / total_segments ) );
+// 	glm::vec2 outer_point = glm::vec2( 1.0, 0.0 );
+
+// 	for( int segment = 0; segment < total_segments; ++segment ) {
+
+// 		if( filled )
+// 			vertex_points.emplace_back( 0.0, 0.0, 0.0, 1.0 );
+
+// 		vertex_points.emplace_back( outer_point, 0.0, 1.0 );
+
+// 		outer_point = glm::rotate( outer_point, delta_angle );
+
+// 		vertex_points.emplace_back( outer_point, 0.0, 1.0 );
+// 	}
+
+// 	return vertex_points;
+// }
