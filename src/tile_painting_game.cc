@@ -36,6 +36,12 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+int main( int /*unused*/, char ** /*unused*/ )
+{
+	GameWrapper<TilePaintingGame> the_game;
+	return the_game.run();
+}
+
 SetupParams TilePaintingGame::get_params()
 {
 	unit_size = 10.0F;

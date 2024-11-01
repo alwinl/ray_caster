@@ -1,5 +1,5 @@
 /*
- * main.cc Copyright 2024 Alwin Leerling dna.leerling@gmail.com
+ * texture_ray_caster.cc Copyright 2024 Alwin Leerling dna.leerling@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,10 +17,17 @@
  * MA 02110-1301, USA.
  */
 
-#include "tile_painting_game.h"
+#include "texture_ray_caster.h"
+
+// #include "sdl2wrapper.h"
 
 int main( int /*unused*/, char ** /*unused*/ )
 {
-	GameWrapper<TilePaintingGame> the_game;
-	return the_game.run();
+	GameWrapper<TexturePainter> app;
+	return app.run();
+}
+
+void TexturePainter::draw_frame()
+{
+	
 }
