@@ -40,7 +40,7 @@ SetupParams TilePaintingGame::get_params()
 {
 	unit_size = 10;
 
-	return SetupParams( { "Ray Caster", screen_width, screen_height, 0,
+	return SetupParams( { "Ray Caster", screen_width, screen_height, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE,
 						  SDL_RENDERER_ACCELERATED } );
 }
 
@@ -83,7 +83,7 @@ void TilePaintingGame::update_state( uint64_t elapsed_time )
 		const glm::vec3 new_position = player_matrix * glm::vec4( 0.005F * elapsed_time, 0.0F, 0.0F, 1.0F );
 
 		if( !is_wall( glm::ivec2( new_position[0] / static_cast<float>( unit_size ),
-										new_position[1] / static_cast<float>( unit_size ) ) ) )
+								  new_position[1] / static_cast<float>( unit_size ) ) ) )
 			player_position = new_position;
 	}
 
@@ -91,9 +91,8 @@ void TilePaintingGame::update_state( uint64_t elapsed_time )
 		const glm::vec3 new_position = player_matrix * glm::vec4( -0.005F * elapsed_time, 0.0F, 0.0F, 1.0F );
 
 		if( !is_wall( glm::ivec2( new_position[0] / static_cast<float>( unit_size ),
-										new_position[1] / static_cast<float>( unit_size ) ) ) )
+								  new_position[1] / static_cast<float>( unit_size ) ) ) )
 			player_position = new_position;
-
 	}
 	if( ( KEY_LEFT & KEY_IS_DOWN ) != 0 )
 		player_angle -= glm::radians( 0.1 * elapsed_time );
@@ -106,7 +105,7 @@ void TilePaintingGame::update_state( uint64_t elapsed_time )
 
 	const auto fscale = static_cast<float>( unit_size );
 
-	player_matrix =  glm::mat4( {
+	player_matrix = glm::mat4( {
 		{ fscale * std::cos( player_angle ), fscale * std::sin( player_angle ), 0.0F, 0.0F },
 		{ -fscale * std::sin( player_angle ), fscale * std::cos( player_angle ), 0.0F, 0.0F },
 		{ 0.0F, 0.0F, 1.0F, 0.0F },
@@ -131,10 +130,12 @@ void TilePaintingGame::draw_grid()
 	const glm::vec4 grid_color = { 0.3, 0.3, 0.3, 1.0 };
 
 	for( int line = 0; line <= world_dimension[0]; ++line )
-		draw_line( { {line * unit_size, 0, 0}, {line * unit_size, world_dimension[1] * unit_size, 0}  }, grid_color );
+		draw_line( { { line * unit_size, 0, 0 }, { line * unit_size, world_dimension[1] * unit_size, 0 } },
+				   grid_color );
 
 	for( int line = 0; line <= world_dimension[1]; ++line )
-		draw_line( { { 0, line * unit_size, 0},	{world_dimension[0] * unit_size, line * unit_size, 0} }, grid_color );
+		draw_line( { { 0, line * unit_size, 0 }, { world_dimension[0] * unit_size, line * unit_size, 0 } },
+				   grid_color );
 }
 
 void TilePaintingGame::draw_level()
@@ -142,13 +143,14 @@ void TilePaintingGame::draw_level()
 	const glm::vec4 white = { 1.0F, 1.0F, 1.0F, 1.0F };
 	const glm::vec4 black = { 0.0F, 0.0F, 0.0F, 1.0F };
 
-	std::pair<glm::vec4,glm::vec4> rect_points;
+	std::pair<glm::vec4, glm::vec4> rect_points;
 
 	for( int cell = 0; cell < world_dimension[0] * world_dimension[1]; ++cell ) {
-			rect_points.first = glm::vec4{ (cell % world_dimension[0]) * unit_size, (cell / world_dimension[0]) * unit_size,0.0F, 1.0F };
-			rect_points.second = rect_points.first + glm::vec4( unit_size, unit_size, 0.0F, 1.0F );
-			
-			draw_rect( rect_points, ( level[cell] == '1' ) ? white : black );
+		rect_points.first = glm::vec4{ ( cell % world_dimension[0] ) * unit_size,
+									   ( cell / world_dimension[0] ) * unit_size, 0.0F, 1.0F };
+		rect_points.second = rect_points.first + glm::vec4( unit_size, unit_size, 0.0F, 1.0F );
+
+		draw_rect( rect_points, ( level[cell] == '1' ) ? white : black );
 	}
 }
 
@@ -235,19 +237,19 @@ void TilePaintingGame::paint_rays()
 
 		if( wall_side != -1 ) {
 
-			glm::vec2 delta( intersection[x_dim] - player_position[x_dim], intersection[y_dim] - player_position[y_dim] );
+			glm::vec2 delta( intersection[x_dim] - player_position[x_dim],
+							 intersection[y_dim] - player_position[y_dim] );
 
-			//const glm::ivec2 cell_hit( intersection / unit_size );
+			// const glm::ivec2 cell_hit( intersection / unit_size );
 
-			const float horz_offset = std::fmod(intersection[x_dim], unit_size);
+			const float horz_offset = std::fmod( intersection[x_dim], unit_size );
 
 			// credit: https://www.youtube.com/watch?v=eOCQfxRQ2pY
 			const float distance = delta[x_dim] * std::cos( player_angle ) + delta[y_dim] * std::sin( player_angle );
 
 			const float height = static_cast<float>( unit_size ) * 400.0F / distance;
-			const std::pair<glm::vec3, glm::vec3> points = {
-				glm::vec3( step, (screen_height / 2.0) - height, 0 ),
-				glm::vec3( step, (screen_height / 2.0) + height, 0 ) };
+			const std::pair<glm::vec3, glm::vec3> points = { glm::vec3( step, ( screen_height / 2.0 ) - height, 0 ),
+															 glm::vec3( step, ( screen_height / 2.0 ) + height, 0 ) };
 
 			if( horz_offset < .0 )
 				draw_line( points, black );

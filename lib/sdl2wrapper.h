@@ -19,18 +19,19 @@
 
 #pragma once
 
+#include <algorithm>
 #include <string>
 #include <vector>
-#include <algorithm>
 
+#define GL_GLEXT_PROTOTYPES
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_opengl.h>
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/ext.hpp>
 #include <glm/glm.hpp>
 
-struct SetupParams 
-{
+struct SetupParams {
 	std::string title;
 	int width;
 	int height;
@@ -41,36 +42,38 @@ struct SetupParams
 class SDL_Wrapper
 {
 public:
-	SDL_Wrapper() { SDL_Init( SDL_INIT_EVERYTHING ); }	
-	~SDL_Wrapper() 
+	SDL_Wrapper() { SDL_Init( SDL_INIT_EVERYTHING ); }
+	~SDL_Wrapper()
 	{
 		SDL_DestroyRenderer( renderer );
 		SDL_DestroyWindow( window );
 		SDL_Quit();
 	}
-	SDL_Wrapper( const SDL_Wrapper& other ) = delete;
-	SDL_Wrapper( SDL_Wrapper&& other ) = delete;
-	SDL_Wrapper& operator=( const SDL_Wrapper& other ) = delete;
-	SDL_Wrapper& operator=( SDL_Wrapper&& other ) = delete;
+	SDL_Wrapper( const SDL_Wrapper &other ) = delete;
+	SDL_Wrapper( SDL_Wrapper &&other ) = delete;
+	SDL_Wrapper &operator=( const SDL_Wrapper &other ) = delete;
+	SDL_Wrapper &operator=( SDL_Wrapper &&other ) = delete;
 
 	void create_window( SetupParams params )
 	{
 		this->params = params;
 
-		window = SDL_CreateWindow( params.title.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-											   params.width, params.height, params.flags );
+		window = SDL_CreateWindow( params.title.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, params.width,
+								   params.height, params.flags );
 		SDL_SetHint( SDL_HINT_RENDER_SCALE_QUALITY, "linear" );
 		renderer = SDL_CreateRenderer( window, -1, params.rendererFlags );
 	}
 
-	void clear_window() {
-		SDL_SetRenderDrawColor( renderer, 0, 0, 0, 255 );
-		SDL_RenderClear( renderer );
+	void clear_window()
+	{
+
+		glClearColor( 0.0F, 0.0F, 0.0F, 0.0F );
+		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+		// SDL_SetRenderDrawColor( renderer, 0, 0, 0, 255 );
+		// SDL_RenderClear( renderer );
 	}
 
-	void display_window() {
-		SDL_RenderPresent( renderer );
-	}
+	void display_window() { SDL_RenderPresent( renderer ); }
 
 	void draw_point( glm::vec3 center, float radius, const glm::vec4 colour )
 	{
@@ -86,12 +89,12 @@ public:
 
 		for( int segment = 0; segment < total_segments; ++segment ) {
 
-			circle_verts.emplace_back( trans * glm::vec4(0.0, 0.0, 0.0, 1.0) );
-			circle_verts.emplace_back( trans * glm::vec4(outer_point, 0.0, 1.0) );
+			circle_verts.emplace_back( trans * glm::vec4( 0.0, 0.0, 0.0, 1.0 ) );
+			circle_verts.emplace_back( trans * glm::vec4( outer_point, 0.0, 1.0 ) );
 
 			outer_point = glm::rotate( outer_point, delta_angle );
 
-			circle_verts.emplace_back( trans * glm::vec4(outer_point, 0.0, 1.0) );
+			circle_verts.emplace_back( trans * glm::vec4( outer_point, 0.0, 1.0 ) );
 		}
 
 		draw_geometry( circle_verts, colour );
@@ -112,13 +115,13 @@ public:
 		SDL_RenderDrawLine( renderer, pt_from[0], pt_from[1], pt_to[0], pt_to[1] );
 	}
 
-	void draw_rect( std::pair<glm::vec4,glm::vec4> points, glm::vec4 colour )
+	void draw_rect( std::pair<glm::vec4, glm::vec4> points, glm::vec4 colour )
 	{
 		constexpr int x_coord = 0;
 		constexpr int y_coord = 1;
 
-		glm::ivec4 pt_lt( points.first );		// left top
-		glm::ivec4 pt_rb( points.second );		// bottom right
+		glm::ivec4 pt_lt( points.first );  // left top
+		glm::ivec4 pt_rb( points.second ); // bottom right
 
 		pt_lt[x_coord] = std::clamp( pt_lt[x_coord], 0, params.width );
 		pt_lt[y_coord] = std::clamp( pt_lt[y_coord], 0, params.height );
@@ -148,8 +151,7 @@ public:
 
 		std::transform( vertex_points.begin(), vertex_points.end(), vertices.begin(), [&]( glm::vec4 point ) {
 			const glm::ivec2 vert( point[0], point[1] );
-			const glm::vec2 fvert( std::clamp( vert[0], 0, params.width ),
-								std::clamp( vert[1], 0, params.height ) );
+			const glm::vec2 fvert( std::clamp( vert[0], 0, params.width ), std::clamp( vert[1], 0, params.height ) );
 			return SDL_Vertex( { { fvert[0], fvert[1] }, colour, texture_uv } );
 		} );
 
@@ -169,10 +171,14 @@ public:
 	virtual ~Game() = default;
 
 	SetupParams make_setup() { return get_params(); }
-	void initialise(SDL_Wrapper * sdl_wrapper ) { this->sdl_wrapper = sdl_wrapper; setup(); }
+	void initialise( SDL_Wrapper *sdl_wrapper )
+	{
+		this->sdl_wrapper = sdl_wrapper;
+		setup();
+	}
 	bool input( SDL_Event &event ) { return process_event( event ); };
 	void update( uint64_t elapsed_time ) { update_state( elapsed_time ); }
-	void draw( ) { draw_frame(); }
+	void draw() { draw_frame(); }
 
 protected:
 	virtual SetupParams get_params() = 0;
@@ -181,10 +187,22 @@ protected:
 	virtual void update_state( uint64_t elapsed_time ) = 0;
 	virtual void draw_frame() = 0;
 
-	void draw_point( glm::vec3 center, float radius, const glm::vec4 colour ) { sdl_wrapper->draw_point( center, radius, colour);}
-	void draw_line( std::pair<glm::vec3, glm::vec3> points, glm::vec4 colour ) { sdl_wrapper->draw_line( points, colour);}
-	void draw_geometry( std::vector<glm::vec4> &vertex_points, glm::vec4 colour ) { sdl_wrapper->draw_geometry( vertex_points, colour);}
-	void draw_rect( std::pair<glm::vec4,glm::vec4> points, glm::vec4 colour ) {sdl_wrapper->draw_rect(points, colour);}
+	void draw_point( glm::vec3 center, float radius, const glm::vec4 colour )
+	{
+		sdl_wrapper->draw_point( center, radius, colour );
+	}
+	void draw_line( std::pair<glm::vec3, glm::vec3> points, glm::vec4 colour )
+	{
+		sdl_wrapper->draw_line( points, colour );
+	}
+	void draw_geometry( std::vector<glm::vec4> &vertex_points, glm::vec4 colour )
+	{
+		sdl_wrapper->draw_geometry( vertex_points, colour );
+	}
+	void draw_rect( std::pair<glm::vec4, glm::vec4> points, glm::vec4 colour )
+	{
+		sdl_wrapper->draw_rect( points, colour );
+	}
 
 	SDL_Wrapper *sdl_wrapper = nullptr;
 };
@@ -195,10 +213,10 @@ public:
 	GameWrapper() = default;
 	~GameWrapper() = default;
 
-	GameWrapper( const GameWrapper& other ) = delete;
-	GameWrapper& operator=( const GameWrapper& other ) = delete;
-	GameWrapper( GameWrapper&& other ) = delete;
-	GameWrapper& operator=( GameWrapper& other ) = delete;
+	GameWrapper( const GameWrapper &other ) = delete;
+	GameWrapper &operator=( const GameWrapper &other ) = delete;
+	GameWrapper( GameWrapper &&other ) = delete;
+	GameWrapper &operator=( GameWrapper &other ) = delete;
 
 	int run()
 	{
@@ -216,7 +234,16 @@ public:
 
 			SDL_Event event;
 
-			while( SDL_PollEvent( &event ) ) quit = aGame.input( event );
+			while( SDL_PollEvent( &event ) ) {
+				switch( event.type ) {
+				case SDL_WINDOWEVENT:
+					if( event.window.event == SDL_WINDOWEVENT_RESIZED )
+						glViewport( 0, 0, event.window.data1, event.window.data2 );
+					break;
+
+				default: quit = aGame.input( event ); break;
+				}
+			}
 
 			if( quit )
 				break;
