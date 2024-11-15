@@ -1,5 +1,5 @@
 /*
- * main.cc Copyright 2024 Alwin Leerling dna.leerling@gmail.com
+ * texture_ray_caster.h Copyright 2024 Alwin Leerling dna.leerling@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,10 +17,18 @@
  * MA 02110-1301, USA.
  */
 
-#include "tile_painting_game.h"
+#pragma once
 
-int main( int /*unused*/, char ** /*unused*/ )
+#include "sdl2wrapper.h"
+
+#include <glm/glm.hpp>
+
+class TexturePainter : public Game
 {
-	GameWrapper<TilePaintingGame> the_game;
-	return the_game.run();
-}
+	SetupParams get_params() override { return SetupParams( { "TexturePainter", 640, 480, 0, SDL_RENDERER_ACCELERATED } ); }
+	void setup() override {}
+	bool process_event( SDL_Event &event ) override { return event.type == SDL_QUIT; }
+	void update_state( uint64_t elapsed_time ) override{};
+	void draw_frame() override;
+};
+

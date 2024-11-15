@@ -18,22 +18,33 @@
 
 
 find_package( PkgConfig REQUIRED )
-find_package(glm CONFIG REQUIRED)
+find_package( glm CONFIG REQUIRED )
 
-add_executable(ray_caster
-	main.cc
+add_executable(
+	ray_caster
+	
 	tile_painting_game.cc
-	#player.cc
+	tile_painting_game.h
+)
+
+add_executable(
+	texture_ray_caster
+
+	texture_ray_caster.cc
+	texture_ray_caster.h
 )
 
 target_link_libraries( ray_caster PRIVATE SDL2_Wrapper )
+target_link_libraries( texture_ray_caster PRIVATE SDL2_Wrapper )
 
 # for linux we have to link glm::glm. For windows its glm. Go figure..
 if( UNIX )
 target_link_libraries(ray_caster PRIVATE glm::glm)
+target_link_libraries(texture_ray_caster PRIVATE glm::glm)
 endif(UNIX)
 
 if(WIN32)
 target_link_libraries(ray_caster PRIVATE glm)
+target_link_libraries(texture_ray_caster PRIVATE glm)
 endif(WIN32)
 
