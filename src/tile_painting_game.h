@@ -17,12 +17,9 @@
  * MA 02110-1301, USA.
  */
 
-#ifndef TILEPAINTINGGAME_H
-#define TILEPAINTINGGAME_H
+#pragma once
 
 #include "sdl2wrapper.h"
-
-// #include <vector>
 
 #include <glm/glm.hpp>
 
@@ -30,7 +27,7 @@ class TilePaintingGame : public Game
 {
 private:
 	SetupParams get_params() override;
-	void setup() override;
+	void setup() override{};
 	bool process_event( SDL_Event &event ) override;
 	void update_state( uint64_t elapsed_time ) override;
 	void draw_frame() override;
@@ -40,14 +37,11 @@ private:
 	void paint_rays();
 	void paint_grid();
 	void paint_level();
-	void paint_direction();
-	void paint_camera_projection();
+	void paint_camera();
 	void paint_character();
 
 	bool is_wall( glm::ivec2 cell );
 	std::pair<int, glm::vec2> calc_intersection( float angle, glm::vec2 ray_start );
-
-	// static std::vector<glm::vec4> make_primitive( int total_segments, bool filled );
 
 	std::string level = "1111111111"
 						"1000100001"
@@ -63,9 +57,9 @@ private:
 	glm::ivec2 world_dimension{ 10, 10 };
 
 	const int screen_width = 640;
-	const int screen_height =480;
+	const int screen_height = 480;
 
-	float unit_size;
+	float unit_size = 10.0F;
 
 	bool quit = false;
 
@@ -78,10 +72,9 @@ private:
 
 	uint8_t key_state = 0;
 
-	glm::vec3 player_position = {20, 20, 0.0};
+	glm::vec3 player_position = { 20, 20, 0.0 };
 	float player_angle = 0.0;
 	float player_zoom = 0.4;
+
 	glm::mat4 player_matrix;
 };
-
-#endif // TILEPAINTINGGAME_H

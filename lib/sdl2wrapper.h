@@ -66,11 +66,8 @@ public:
 
 	void clear_window()
 	{
-
 		glClearColor( 0.0F, 0.0F, 0.0F, 0.0F );
 		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-		// SDL_SetRenderDrawColor( renderer, 0, 0, 0, 255 );
-		// SDL_RenderClear( renderer );
 	}
 
 	void display_window() { SDL_RenderPresent( renderer ); }
@@ -83,7 +80,7 @@ public:
 		trans = glm::translate( trans, center );
 		trans = glm::scale( trans, glm::vec3( radius ) );
 
-		const auto delta_angle = glm::radians( 360.0F / (1.0F * total_segments) );
+		const auto delta_angle = glm::radians( 360.0F / ( 1.0F * total_segments ) );
 		glm::vec2 outer_point = glm::vec2( 1.0, 0.0 );
 		std::vector<glm::vec4> circle_verts;
 
@@ -220,8 +217,7 @@ public:
 
 	int run()
 	{
-
-		params = aGame.make_setup();
+		SetupParams params = aGame.make_setup();
 		sdl_wrapper.create_window( params );
 
 		aGame.initialise( &sdl_wrapper );
@@ -268,7 +264,6 @@ public:
 private:
 	SDL_Wrapper sdl_wrapper;
 	T aGame;
-	SetupParams params;
 };
 
 class BlankGame : public Game
