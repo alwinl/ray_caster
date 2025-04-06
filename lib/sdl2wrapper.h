@@ -23,9 +23,7 @@
 #include <string>
 #include <vector>
 
-#define GL_GLEXT_PROTOTYPES
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_opengl.h>
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/ext.hpp>
@@ -64,10 +62,10 @@ public:
 		renderer = SDL_CreateRenderer( window, -1, params.rendererFlags );
 	}
 
-	void clear_window()
+	void draw_background( glm::u8vec3 color = { 0, 0, 0 } )
 	{
-		glClearColor( 0.0F, 0.0F, 0.0F, 0.0F );
-		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+		SDL_SetRenderDrawColor( renderer, color.r, color.g, color.b, 255 );
+		SDL_RenderClear( renderer );
 	}
 
 	void display_window() { SDL_RenderPresent( renderer ); }
@@ -103,36 +101,33 @@ public:
 		glm::ivec3 pt_from( points.first );
 		glm::ivec3 pt_to( points.second );
 
-		pt_from[0] = std::clamp( pt_from[0], 0, params.width );
-		pt_from[1] = std::clamp( pt_from[1], 0, params.height );
-		pt_to[0] = std::clamp( pt_to[0], 0, params.width );
-		pt_to[1] = std::clamp( pt_to[1], 0, params.height );
+		pt_from.x = std::clamp( pt_from.x, 0, params.width );
+		pt_from.y = std::clamp( pt_from.y, 0, params.height );
+		pt_to.x = std::clamp( pt_to.x, 0, params.width );
+		pt_to.y = std::clamp( pt_to.y, 0, params.height );
 
-		SDL_SetRenderDrawColor( renderer, temp[0], temp[1], temp[2], temp[3] );
-		SDL_RenderDrawLine( renderer, pt_from[0], pt_from[1], pt_to[0], pt_to[1] );
+		SDL_SetRenderDrawColor( renderer, temp.r, temp.g, temp.b, temp.a );
+		SDL_RenderDrawLine( renderer, pt_from.x, pt_from.y, pt_to.x, pt_to.y );
 	}
 
 	void draw_rect( std::pair<glm::vec4, glm::vec4> points, glm::vec4 colour )
 	{
-		constexpr int x_coord = 0;
-		constexpr int y_coord = 1;
-
 		glm::ivec4 pt_lt( points.first );  // left top
 		glm::ivec4 pt_rb( points.second ); // bottom right
 
-		pt_lt[x_coord] = std::clamp( pt_lt[x_coord], 0, params.width );
-		pt_lt[y_coord] = std::clamp( pt_lt[y_coord], 0, params.height );
-		pt_rb[x_coord] = std::clamp( pt_rb[x_coord], 0, params.width );
-		pt_rb[y_coord] = std::clamp( pt_rb[y_coord], 0, params.height );
+		pt_lt.x = std::clamp( pt_lt.x, 0, params.width );
+		pt_lt.y = std::clamp( pt_lt.y, 0, params.height );
+		pt_rb.x = std::clamp( pt_rb.x, 0, params.width );
+		pt_rb.y = std::clamp( pt_rb.y, 0, params.height );
 
 		std::vector<glm::vec4> verts;
-		verts.emplace_back( pt_lt[x_coord], pt_lt[y_coord], 0.0, 1.0 );
-		verts.emplace_back( pt_rb[x_coord], pt_rb[y_coord], 0.0, 1.0 );
-		verts.emplace_back( pt_lt[x_coord], pt_rb[y_coord], 0.0, 1.0 );
+		verts.emplace_back( pt_lt.x, pt_lt.y, 0.0, 1.0 );
+		verts.emplace_back( pt_rb.x, pt_rb.y, 0.0, 1.0 );
+		verts.emplace_back( pt_lt.x, pt_rb.y, 0.0, 1.0 );
 
-		verts.emplace_back( pt_lt[x_coord], pt_lt[y_coord], 0.0, 1.0 );
-		verts.emplace_back( pt_rb[x_coord], pt_lt[y_coord], 0.0, 1.0 );
-		verts.emplace_back( pt_rb[x_coord], pt_rb[y_coord], 0.0, 1.0 );
+		verts.emplace_back( pt_lt.x, pt_lt.y, 0.0, 1.0 );
+		verts.emplace_back( pt_rb.x, pt_lt.y, 0.0, 1.0 );
+		verts.emplace_back( pt_rb.x, pt_rb.y, 0.0, 1.0 );
 
 		draw_geometry( verts, colour );
 	}
@@ -140,20 +135,22 @@ public:
 	void draw_geometry( std::vector<glm::vec4> &vertex_points, glm::vec4 color )
 	{
 		glm::u8vec3 temp = color * 255;
-		SDL_Color colour = { temp[0], temp[1], temp[2] };
+		SDL_Color colour = { temp.r, temp.g, temp.b };
 		SDL_FPoint texture_uv = { 0, 0 };
 
 		std::vector<SDL_Vertex> vertices;
 		vertices.resize( vertex_points.size() );
 
 		std::transform( vertex_points.begin(), vertex_points.end(), vertices.begin(), [&]( glm::vec4 point ) {
-			const glm::ivec2 vert( point[0], point[1] );
-			const glm::vec2 fvert( std::clamp( vert[0], 0, params.width ), std::clamp( vert[1], 0, params.height ) );
-			return SDL_Vertex( { { fvert[0], fvert[1] }, colour, texture_uv } );
+			const glm::ivec2 vert( point.x, point.y );
+			const glm::vec2 fvert( std::clamp( vert.x, 0, params.width ), std::clamp( vert.y, 0, params.height ) );
+			return SDL_Vertex( { { fvert.x, fvert.y }, colour, texture_uv } );
 		} );
 
 		SDL_RenderGeometry( renderer, nullptr, vertices.data(), static_cast<int>( vertices.size() ), nullptr, 0 );
 	}
+
+	uint64_t get_ticks() { return SDL_GetTicks64(); }
 
 private:
 	SDL_Renderer *renderer = nullptr;
@@ -200,6 +197,7 @@ protected:
 	{
 		sdl_wrapper->draw_rect( points, colour );
 	}
+	void draw_background( glm::u8vec3 colour ) { sdl_wrapper->draw_background( colour ); }
 
 	SDL_Wrapper *sdl_wrapper = nullptr;
 };
@@ -217,12 +215,15 @@ public:
 
 	int run()
 	{
+		SDL_Wrapper win;
+		T aGame;
+
 		SetupParams params = aGame.make_setup();
-		sdl_wrapper.create_window( params );
+		win.create_window( params );
 
-		aGame.initialise( &sdl_wrapper );
+		aGame.initialise( &win );
 
-		uint64_t game_tick = SDL_GetTicks64();
+		uint64_t frame_tick = win.get_ticks();
 
 		bool quit = false;
 
@@ -230,31 +231,22 @@ public:
 
 			SDL_Event event;
 
-			while( SDL_PollEvent( &event ) ) {
-				switch( event.type ) {
-				case SDL_WINDOWEVENT:
-					if( event.window.event == SDL_WINDOWEVENT_RESIZED )
-						glViewport( 0, 0, event.window.data1, event.window.data2 );
-					break;
-
-				default: quit = aGame.input( event ); break;
-				}
-			}
+			while( SDL_PollEvent( &event ) ) quit = aGame.input( event );
 
 			if( quit )
 				break;
 
-			if( SDL_GetTicks64() > ( game_tick + 16 ) ) {
+			if( win.get_ticks() > ( frame_tick + 16 ) ) {
 
-				aGame.update( SDL_GetTicks64() - game_tick );
+				aGame.update( win.get_ticks() - frame_tick );
 
-				sdl_wrapper.clear_window();
+				win.draw_background();
 
 				aGame.draw();
 
-				sdl_wrapper.display_window();
+				win.display_window();
 
-				game_tick = SDL_GetTicks64();
+				frame_tick = win.get_ticks();
 			}
 		}
 
@@ -262,8 +254,6 @@ public:
 	};
 
 private:
-	SDL_Wrapper sdl_wrapper;
-	T aGame;
 };
 
 class BlankGame : public Game

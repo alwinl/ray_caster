@@ -19,8 +19,6 @@
 
 #include "tile_painting_game.h"
 
-#include "sdl2wrapper.h"
-
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/ext.hpp>
 #include <glm/glm.hpp>
@@ -35,8 +33,7 @@ int main( int /*unused*/, char ** /*unused*/ )
 
 SetupParams TilePaintingGame::get_params()
 {
-	return SetupParams( { "Ray Caster", screen_width, screen_height, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE,
-						  SDL_RENDERER_ACCELERATED } );
+	return SetupParams( { "Ray Caster", screen_width, screen_height, SDL_WINDOW_RESIZABLE, SDL_RENDERER_ACCELERATED } );
 }
 
 bool TilePaintingGame::process_event( SDL_Event &event )
@@ -61,6 +58,16 @@ bool TilePaintingGame::process_event( SDL_Event &event )
 		case SDLK_x: key_state &= ~( 1 << KEY_X ); break;
 		case SDLK_z: key_state &= ~( 1 << KEY_Z ); break;
 		case SDLK_ESCAPE: quit = true; break;
+		}
+	}
+
+	if( event.type == SDL_WINDOWEVENT ) {
+		switch( event.window.event ) {
+		case SDL_WINDOWEVENT_SIZE_CHANGED:
+			screen_width = event.window.data1;
+			screen_height = event.window.data2;
+			break;
+		default: break;
 		}
 	}
 

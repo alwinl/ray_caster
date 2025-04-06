@@ -56,8 +56,8 @@ private:
 
 	glm::ivec2 world_dimension{ 10, 10 };
 
-	const int screen_width = 640;
-	const int screen_height = 480;
+	int screen_width = 640;
+	int screen_height = 480;
 
 	float unit_size = 10.0F;
 
