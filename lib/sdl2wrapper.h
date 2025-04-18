@@ -23,52 +23,52 @@
 #include <string>
 #include <vector>
 
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/ext.hpp>
 #include <glm/glm.hpp>
 
-struct SetupParams {
+struct SetupParams
+{
 	std::string title;
 	int width;
 	int height;
 	uint32_t flags; // potential to make this an enum class
-	int rendererFlags = SDL_RENDERER_ACCELERATED;
+	int rendererFlags = 0;
 };
 
 class SDL_Wrapper
 {
 public:
-	SDL_Wrapper() { SDL_Init( SDL_INIT_EVERYTHING ); }
+	SDL_Wrapper() { SDL_Init( SDL_INIT_VIDEO ); }
 	~SDL_Wrapper()
 	{
 		SDL_DestroyRenderer( renderer );
 		SDL_DestroyWindow( window );
 		SDL_Quit();
 	}
-	SDL_Wrapper( const SDL_Wrapper &other ) = delete;
-	SDL_Wrapper( SDL_Wrapper &&other ) = delete;
-	SDL_Wrapper &operator=( const SDL_Wrapper &other ) = delete;
-	SDL_Wrapper &operator=( SDL_Wrapper &&other ) = delete;
+	SDL_Wrapper( const SDL_Wrapper& other ) = delete;
+	SDL_Wrapper( SDL_Wrapper&& other ) = delete;
+	SDL_Wrapper& operator=( const SDL_Wrapper& other ) = delete;
+	SDL_Wrapper& operator=( SDL_Wrapper&& other ) = delete;
 
 	void create_window( SetupParams params )
 	{
 		this->params = params;
 
-		window = SDL_CreateWindow( params.title.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, params.width,
-								   params.height, params.flags );
-		SDL_SetHint( SDL_HINT_RENDER_SCALE_QUALITY, "linear" );
-		renderer = SDL_CreateRenderer( window, -1, params.rendererFlags );
+		if( ! SDL_CreateWindowAndRenderer( params.title.c_str(), params.width, params.height, params.flags, &window, &renderer ) != 0 )
+			throw std::runtime_error( SDL_GetError() );
 	}
 
-	void draw_background( glm::u8vec3 color = { 0, 0, 0 } )
-	{
+	void draw_background( glm::u8vec3 color = {0,0,0} ) {
 		SDL_SetRenderDrawColor( renderer, color.r, color.g, color.b, 255 );
 		SDL_RenderClear( renderer );
 	}
 
-	void display_window() { SDL_RenderPresent( renderer ); }
+	void display_window() {
+		SDL_RenderPresent( renderer );
+	}
 
 	void draw_point( glm::vec3 center, float radius, const glm::vec4 colour )
 	{
@@ -78,18 +78,18 @@ public:
 		trans = glm::translate( trans, center );
 		trans = glm::scale( trans, glm::vec3( radius ) );
 
-		const auto delta_angle = glm::radians( 360.0F / ( 1.0F * total_segments ) );
+		const auto delta_angle = glm::radians( 360.0F / (1.0F * total_segments) );
 		glm::vec2 outer_point = glm::vec2( 1.0, 0.0 );
 		std::vector<glm::vec4> circle_verts;
 
 		for( int segment = 0; segment < total_segments; ++segment ) {
 
-			circle_verts.emplace_back( trans * glm::vec4( 0.0, 0.0, 0.0, 1.0 ) );
-			circle_verts.emplace_back( trans * glm::vec4( outer_point, 0.0, 1.0 ) );
+			circle_verts.emplace_back( trans * glm::vec4(0.0, 0.0, 0.0, 1.0) );
+			circle_verts.emplace_back( trans * glm::vec4(outer_point, 0.0, 1.0) );
 
 			outer_point = glm::rotate( outer_point, delta_angle );
 
-			circle_verts.emplace_back( trans * glm::vec4( outer_point, 0.0, 1.0 ) );
+			circle_verts.emplace_back( trans * glm::vec4(outer_point, 0.0, 1.0) );
 		}
 
 		draw_geometry( circle_verts, colour );
@@ -101,23 +101,23 @@ public:
 		glm::ivec3 pt_from( points.first );
 		glm::ivec3 pt_to( points.second );
 
-		pt_from.x = std::clamp( pt_from.x, 0, params.width );
+		pt_from.x = std::clamp( pt_from.x, 0, params.width  );
 		pt_from.y = std::clamp( pt_from.y, 0, params.height );
-		pt_to.x = std::clamp( pt_to.x, 0, params.width );
-		pt_to.y = std::clamp( pt_to.y, 0, params.height );
+		pt_to.x   = std::clamp( pt_to.x,   0, params.width  );
+		pt_to.y   = std::clamp( pt_to.y,   0, params.height );
 
 		SDL_SetRenderDrawColor( renderer, temp.r, temp.g, temp.b, temp.a );
-		SDL_RenderDrawLine( renderer, pt_from.x, pt_from.y, pt_to.x, pt_to.y );
+		SDL_RenderLine( renderer, pt_from.x, pt_from.y, pt_to.x, pt_to.y );
 	}
 
-	void draw_rect( std::pair<glm::vec4, glm::vec4> points, glm::vec4 colour )
+	void draw_rect( std::pair<glm::vec4,glm::vec4> points, glm::vec4 colour )
 	{
-		glm::ivec4 pt_lt( points.first );  // left top
-		glm::ivec4 pt_rb( points.second ); // bottom right
+		glm::ivec4 pt_lt( points.first );		// left top
+		glm::ivec4 pt_rb( points.second );		// bottom right
 
-		pt_lt.x = std::clamp( pt_lt.x, 0, params.width );
+		pt_lt.x = std::clamp( pt_lt.x, 0, params.width  );
 		pt_lt.y = std::clamp( pt_lt.y, 0, params.height );
-		pt_rb.x = std::clamp( pt_rb.x, 0, params.width );
+		pt_rb.x = std::clamp( pt_rb.x, 0, params.width  );
 		pt_rb.y = std::clamp( pt_rb.y, 0, params.height );
 
 		std::vector<glm::vec4> verts;
@@ -134,23 +134,24 @@ public:
 
 	void draw_geometry( std::vector<glm::vec4> &vertex_points, glm::vec4 color )
 	{
-		glm::u8vec3 temp = color * 255;
-		SDL_Color colour = { temp.r, temp.g, temp.b };
+		glm::vec3 temp = color * 255;
+		SDL_FColor colour = { temp.r, temp.g, temp.b };
 		SDL_FPoint texture_uv = { 0, 0 };
 
 		std::vector<SDL_Vertex> vertices;
 		vertices.resize( vertex_points.size() );
 
 		std::transform( vertex_points.begin(), vertex_points.end(), vertices.begin(), [&]( glm::vec4 point ) {
-			const glm::ivec2 vert( point.x, point.y );
-			const glm::vec2 fvert( std::clamp( vert.x, 0, params.width ), std::clamp( vert.y, 0, params.height ) );
-			return SDL_Vertex( { { fvert.x, fvert.y }, colour, texture_uv } );
+			const SDL_FPoint vert( std::clamp( point.x, 0.0F, params.width * 1.0F ),
+								std::clamp( point.y, 0.0F, params.height * 10.F) );
+			return SDL_Vertex( vert, colour, texture_uv );
+
 		} );
 
 		SDL_RenderGeometry( renderer, nullptr, vertices.data(), static_cast<int>( vertices.size() ), nullptr, 0 );
 	}
 
-	uint64_t get_ticks() { return SDL_GetTicks64(); }
+	uint64_t get_ticks() { return SDL_GetTicks(); }
 
 private:
 	SDL_Renderer *renderer = nullptr;
@@ -181,23 +182,11 @@ protected:
 	virtual void update_state( uint64_t elapsed_time ) = 0;
 	virtual void draw_frame() = 0;
 
-	void draw_point( glm::vec3 center, float radius, const glm::vec4 colour )
-	{
-		sdl_wrapper->draw_point( center, radius, colour );
-	}
-	void draw_line( std::pair<glm::vec3, glm::vec3> points, glm::vec4 colour )
-	{
-		sdl_wrapper->draw_line( points, colour );
-	}
-	void draw_geometry( std::vector<glm::vec4> &vertex_points, glm::vec4 colour )
-	{
-		sdl_wrapper->draw_geometry( vertex_points, colour );
-	}
-	void draw_rect( std::pair<glm::vec4, glm::vec4> points, glm::vec4 colour )
-	{
-		sdl_wrapper->draw_rect( points, colour );
-	}
-	void draw_background( glm::u8vec3 colour ) { sdl_wrapper->draw_background( colour ); }
+	void draw_point( glm::vec3 center, float radius, const glm::vec4 colour ) { sdl_wrapper->draw_point( center, radius, colour);}
+	void draw_line( std::pair<glm::vec3, glm::vec3> points, glm::vec4 colour ) { sdl_wrapper->draw_line( points, colour);}
+	void draw_geometry( std::vector<glm::vec4> &vertex_points, glm::vec4 colour ) { sdl_wrapper->draw_geometry( vertex_points, colour);}
+	void draw_rect( std::pair<glm::vec4,glm::vec4> points, glm::vec4 colour ) {sdl_wrapper->draw_rect(points, colour);}
+	void draw_background( glm::u8vec3 colour ) {sdl_wrapper->draw_background(colour);}
 
 	SDL_Wrapper *sdl_wrapper = nullptr;
 };
@@ -208,10 +197,10 @@ public:
 	GameWrapper() = default;
 	~GameWrapper() = default;
 
-	GameWrapper( const GameWrapper &other ) = delete;
-	GameWrapper &operator=( const GameWrapper &other ) = delete;
-	GameWrapper( GameWrapper &&other ) = delete;
-	GameWrapper &operator=( GameWrapper &other ) = delete;
+	GameWrapper( const GameWrapper& other ) = delete;
+	GameWrapper& operator=( const GameWrapper& other ) = delete;
+	GameWrapper( GameWrapper&& other ) = delete;
+	GameWrapper& operator=( GameWrapper& other ) = delete;
 
 	int run()
 	{
@@ -231,7 +220,8 @@ public:
 
 			SDL_Event event;
 
-			while( SDL_PollEvent( &event ) ) quit = aGame.input( event );
+			while( SDL_PollEvent( &event ) )
+				quit = aGame.input( event );
 
 			if( quit )
 				break;
@@ -258,9 +248,9 @@ private:
 
 class BlankGame : public Game
 {
-	SetupParams get_params() override { return SetupParams( { "Blank Game", 640, 480, 0, SDL_RENDERER_ACCELERATED } ); }
+	SetupParams get_params() override { return SetupParams( { "Blank Game", 640, 480, 0, 0 } ); }
 	void setup() override {}
-	bool process_event( SDL_Event &event ) override { return event.type == SDL_QUIT; }
+	bool process_event( SDL_Event &event ) override { return event.type == SDL_EVENT_QUIT; }
 	void update_state( uint64_t elapsed_time ) override{};
 	void draw_frame() override{};
 };

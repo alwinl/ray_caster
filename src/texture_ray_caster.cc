@@ -27,45 +27,40 @@ int main( int /*unused*/, char ** /*unused*/ )
 
 SetupParams TexturePainter::get_params()
 {
-	return SetupParams( { "Ray Caster", screen_width, screen_height, SDL_WINDOW_RESIZABLE, SDL_RENDERER_ACCELERATED } );
+	return SetupParams( { "Ray Caster", screen_width, screen_height, SDL_WINDOW_RESIZABLE, 0 } );
 }
 
 bool TexturePainter::process_event( SDL_Event &event )
 {
-	if( event.type == SDL_KEYDOWN ) {
-		switch( event.key.keysym.sym ) {
+	if( event.type == SDL_EVENT_KEY_DOWN ) {
+		switch( event.key.key ) {
 		case SDLK_UP: key_state |= 1 << KEY_UP; break;
 		case SDLK_DOWN: key_state |= 1 << KEY_DOWN; break;
 		case SDLK_LEFT: key_state |= 1 << KEY_LEFT; break;
 		case SDLK_RIGHT: key_state |= 1 << KEY_RIGHT; break;
-		case SDLK_x: key_state |= 1 << KEY_X; break;
-		case SDLK_z: key_state |= 1 << KEY_Z; break;
+		case SDLK_X: key_state |= 1 << KEY_X; break;
+		case SDLK_Z: key_state |= 1 << KEY_Z; break;
 		}
 	}
 
-	if( event.type == SDL_KEYUP ) {
-		switch( event.key.keysym.sym ) {
+	if( event.type == SDL_EVENT_KEY_UP ) {
+		switch( event.key.key ) {
 		case SDLK_UP: key_state &= ~( 1 << KEY_UP ); break;
 		case SDLK_DOWN: key_state &= ~( 1 << KEY_DOWN ); break;
 		case SDLK_LEFT: key_state &= ~( 1 << KEY_LEFT ); break;
 		case SDLK_RIGHT: key_state &= ~( 1 << KEY_RIGHT ); break;
-		case SDLK_x: key_state &= ~( 1 << KEY_X ); break;
-		case SDLK_z: key_state &= ~( 1 << KEY_Z ); break;
+		case SDLK_X: key_state &= ~( 1 << KEY_X ); break;
+		case SDLK_Z: key_state &= ~( 1 << KEY_Z ); break;
 		case SDLK_ESCAPE: quit = true; break;
 		}
 	}
 
-	if( event.type == SDL_WINDOWEVENT ) {
-		switch( event.window.event ) {
-		case SDL_WINDOWEVENT_SIZE_CHANGED:
-			screen_width = event.window.data1;
-			screen_height = event.window.data2;
-			break;
-		default: break;
-		}
+	if( event.type == SDL_EVENT_WINDOW_RESIZED ) {
+		screen_width = event.window.data1;
+		screen_height = event.window.data2;
 	}
 
-	if( event.type == SDL_QUIT )
+	if( event.type == SDL_EVENT_QUIT )
 		quit = true;
 
 	return quit;
