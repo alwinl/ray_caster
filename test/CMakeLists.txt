@@ -38,7 +38,7 @@ if(WIN32)
 target_link_libraries(test_runner PRIVATE glm)
 endif(WIN32)
 
-target_link_libraries( test_runner PRIVATE SDL2_Wrapper )
+target_link_libraries( test_runner PRIVATE SDL3_Wrapper )
 
 
 add_test( TestGLM::check_new_trans_calculation test_runner TestGLM::check_new_trans_calculation )

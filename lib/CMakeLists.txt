@@ -22,19 +22,19 @@ find_package(OpenGL REQUIRED)
 
 find_package(SDL3 REQUIRED CONFIG REQUIRED COMPONENTS SDL3-shared)
 
-add_library(SDL2_Wrapper INTERFACE)
+add_library(SDL3_Wrapper INTERFACE)
 
-target_include_directories(SDL2_Wrapper INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(SDL2_Wrapper INTERFACE SDL3::SDL3-shared)
-target_link_libraries(SDL2_Wrapper INTERFACE ${OPENGL_LIBRARIES})
+target_include_directories(SDL3_Wrapper INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(SDL3_Wrapper INTERFACE SDL3::SDL3-shared)
+target_link_libraries(SDL3_Wrapper INTERFACE ${OPENGL_LIBRARIES})
 
 find_package(glm CONFIG REQUIRED)
 
 # for linux we have to link glm::glm. For windows its glm. Go figure..
 if( UNIX )
-target_link_libraries(SDL2_Wrapper INTERFACE glm::glm)
+target_link_libraries(SDL3_Wrapper INTERFACE glm::glm)
 endif(UNIX)
 
 if(WIN32)
-target_link_libraries(SDL2_Wrapper INTERFACE glm)
+target_link_libraries(SDL3_Wrapper INTERFACE glm)
 endif(WIN32)
