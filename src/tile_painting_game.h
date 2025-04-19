@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "sdl2wrapper.h"
+#include "sdl_wrapper.h"
 
 #include <glm/glm.hpp>
 
