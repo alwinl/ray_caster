@@ -17,9 +17,8 @@
  * MA 02110-1301, USA.
  */
 
-#include "testglm.h"
+#include <gtest/gtest.h>
 
-CPPUNIT_TEST_SUITE_REGISTRATION( TestGLM );
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/ext.hpp>
@@ -67,7 +66,7 @@ glm::mat4 get_new_trans_matrix( Model &model )
 
 } // namespace
 
-void TestGLM::check_new_trans_calculation()
+TEST( TestGLM, check_new_trans_calculation )
 {
 	Model model{};
 
@@ -86,6 +85,6 @@ void TestGLM::check_new_trans_calculation()
 
 		for( const int first : { 0, 1, 2, 3 } )
 			for( const int second : { 0, 1, 2, 3 } )
-				CPPUNIT_ASSERT( std::fabs( old_result[first][second] - new_result[first][second] ) < 0.000001 );
+				ASSERT_TRUE( std::fabs( old_result[first][second] - new_result[first][second] ) < 0.000001 );
 	}
 }
